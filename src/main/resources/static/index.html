@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>HarmoJam</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+          --bg1: #140b33;
+          --bg2: #3b0a73;
+          --bg3: #ff6cab;
+          --accent: #ffb347;
+          --input-bg: rgba(18, 16, 35, 0.6);
+        }
+
+        * { box-sizing: border-box; }
+
+
+        body {
+          margin: 0;
+          font-family: "Plus Jakarta Sans", sans-serif;
+          min-height: 100vh;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          align-items: center;
+          color: #fff;
+          position: relative;
+          overflow-x: hidden;
+
+          background:
+            radial-gradient(circle at 10% 0%, rgba(255, 108, 171, 0.28) 0, transparent 50%),
+            radial-gradient(circle at 90% 100%, rgba(255, 179, 71, 0.25) 0, transparent 55%),
+            linear-gradient(135deg, var(--bg1), var(--bg2), var(--bg3));
+          background-size: 200% 200%;
+          animation: gradientShift 18s ease-in-out infinite;
+        }
+
+        .wave {
+          position: fixed;//absolute
+          width: 150%;
+          height: 150%;
+          background: radial-gradient(circle, rgba(255, 255, 255, 0.05) 0%, transparent 60%);
+          animation: floatWave 20s infinite ease-in-out;
+          filter: blur(90px);
+          mix-blend-mode: screen;
+          pointer-events: none;
+          z-index: 0;
+        }
+        .wave:nth-child(1) { top: -25%; left: -15%; }
+        .wave:nth-child(2) { bottom: -25%; right: -20%; animation-duration: 24s; }
+
+        .glow {
+          position: fixed;//absolute
+          width: 420px;
+          height: 420px;
+          border-radius: 50%;
+          filter: blur(60px);
+          opacity: 0.5;
+          mix-blend-mode: screen;
+          pointer-events: none;
+          z-index: 0;
+        }
+        .glow.glow-1 { top: 10%; right: 5%; background: radial-gradient(circle, rgba(255, 179, 71, 0.65), transparent 60%); }
+        .glow.glow-2 { bottom: -10%; left: -5%; background: radial-gradient(circle, rgba(120, 212, 255, 0.7), transparent 60%); }
+
+        .noise {
+          pointer-events: none;
+          position: fixed;
+          inset: 0;
+          background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 160 160' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.1' numOctaves='3' stitchTiles='noStitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.18'/%3E%3C/svg%3E");
+          mix-blend-mode: soft-light;
+          opacity: 0.4;
+          z-index: 1;
+        }
+
+        .content-wrapper {
+          position: relative;
+          text-align: center;
+          width: 100%;
+          max-width: 700px;
+          z-index: 10;
+          padding: 20px;
+          transition: transform 0.5s ease;
+        }
+
+        /*body.results-mode {
+            justify-content: flex-start;
+            padding-top: 40px;
+            height: auto;
+        }*/
+        body.results-mode {
+            justify-content: flex-start; /* İçeriği tepeye yasla */
+            padding-top: 40px;
+            padding-bottom: 40px;
+            height: auto; /* Yükseklik kilidini aç */
+            min-height: 100vh; /* En az ekran boyu kadar olsun (arkaplan bozulmasın) */
+            overflow-x: hidden; /* Yanlara taşmayı engelle */
+        }
+
+        .content-wrapper.searched {
+            margin-bottom: 20px;
+        }
+
+        h1 {
+          margin: 0 0 24px;
+          font-weight: 800;
+          font-size: 64px;
+          letter-spacing: -1.5px;
+          background: linear-gradient(to bottom, #fff, #ffe3ec);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          filter: drop-shadow(0 4px 15px rgba(0,0,0,0.3));
+        }
+
+        .tagline {
+          margin-top: 16px;
+          font-size: 14px;
+          font-weight: 400;
+          color: rgba(255, 255, 255, 0.65);
+          letter-spacing: 0.5px;
+          text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        }
+
+        .search-wrapper {
+          display: flex;
+          justify-content: center;
+          position: relative;
+        }
+
+        .search-box {
+          display: flex;
+          align-items: center;
+          width: 100%;
+          max-width: 580px;
+          background: rgba(15, 8, 32, 0.4);
+          backdrop-filter: blur(15px);
+          border-radius: 999px;
+          padding: 8px;
+          padding-left: 24px;
+          border: 1px solid rgba(255, 255, 255, 0.15);
+          box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
+          transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+
+        .search-box:focus-within {
+          background: rgba(15, 8, 32, 0.7);
+          border-color: rgba(255, 179, 71, 0.5);
+          box-shadow: 0 15px 45px rgba(0, 0, 0, 0.5), 0 0 0 2px rgba(255, 179, 71, 0.2);
+          transform: scale(1.02);
+        }
+
+        .search-box input {
+          flex: 1;
+          padding: 12px 0;
+          border: none;
+          outline: none;
+          font-size: 17px;
+          font-weight: 500;
+          color: #fff;
+          background: transparent;
+          font-family: inherit;
+        }
+
+        .search-box input::placeholder {
+          color: rgba(255, 255, 255, 0.5);
+        }
+
+        .search-btn {
+          width: 50px;
+          height: 50px;
+          background: radial-gradient(circle at 30% 0%, #ffe6b3 0, #ffb347 30%, #ff6cab 100%);
+          border: none;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          cursor: pointer;
+          border-radius: 50%;
+          box-shadow: 0 8px 20px rgba(255, 108, 171, 0.3);
+          transition: all 0.2s ease;
+          margin-left: 10px;
+        }
+
+        .search-btn:hover {
+          transform: translateY(-2px) scale(1.05);
+          filter: brightness(1.1);
+        }
+
+        .search-btn:active {
+          transform: scale(0.95);
+        }
+
+        .search-btn svg {
+          width: 20px;
+          height: 20px;
+          fill: #2a0a4a;
+        }
+
+        .search-btn.loading svg { display: none; }
+        .search-btn.loading::after {
+          content: "";
+          width: 18px;
+          height: 18px;
+          border: 2px solid rgba(42, 10, 74, 0.3);
+          border-top-color: #2a0a4a;
+          border-radius: 50%;
+          animation: spin 0.8s linear infinite;
+        }
+
+        /* Results Area */
+        .results-area {
+          width: 100%;
+          max-width: 1000px;
+          opacity: 0;
+          transform: translateY(20px);
+          transition: all 0.5s ease;
+          z-index: 10;
+          pointer-events: none;
+          margin-top: 20px;
+
+          /* BURASI ESKİ HALİ: Flex yapısı, sığdığı kadar koyar (genelde 3) */
+          display: flex;
+          flex-wrap: wrap;
+          gap: 20px;
+          justify-content: center;
+        }
+
+        .results-area.show {
+          opacity: 1;
+          transform: translateY(0);
+          pointer-events: auto;
+        }
+
+        /* Kart Tasarımı */
+        .card {
+          background: rgba(20, 15, 45, 0.6);
+          backdrop-filter: blur(10px);
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          /* Kart genişliği sabit 300px civarı olsun ki sığmazsa aşağı geçsin */
+          width: 220px;
+          padding: 15px;
+          border-radius: 20px;
+          text-align: left;
+          transition: transform 0.3s ease, background 0.3s ease;
+          box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+
+        .card:hover {
+            transform: translateY(-8px);
+            background: rgba(30, 25, 60, 0.8);
+            border-color: rgba(255, 179, 71, 0.3);
+        }
+
+        .card img {
+            width: 100%;
+            border-radius: 12px;
+            margin-bottom: 12px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+
+        .card h3 {
+            margin: 0 0 5px 0;
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #fff;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .card p {
+            margin: 0 0 15px 0;
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.6);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .card-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .action-btn {
+            flex: 1;
+            padding: 8px 0;
+            text-align: center;
+            border-radius: 50px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-decoration: none;
+            cursor: pointer;
+            border: none;
+            transition: 0.2s;
+        }
+
+        .play-btn {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .play-btn:hover { background: rgba(255, 255, 255, 0.2); }
+
+        .recommend-btn {
+            background: linear-gradient(135deg, #ffb347, #ff6cab);
+            color: #140b33;
+        }
+        .recommend-btn:hover { filter: brightness(1.1); }
+
+        .result-placeholder {
+          width: 100%;
+          background: rgba(15, 8, 32, 0.5);
+          backdrop-filter: blur(10px);
+          border-radius: 16px;
+          padding: 30px;
+          color: rgba(255,255,255,0.7);
+          border: 1px solid rgba(255,255,255,0.1);
+          text-align: center;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes floatWave {
+          0% { transform: translateY(0px) rotate(0deg); }
+          50% { transform: translateY(40px) rotate(10deg); }
+          100% { transform: translateY(0px) rotate(0deg); }
+        }
+        @keyframes gradientShift {
+          0% { background-position: 0% 50%; }
+          50% { background-position: 100% 50%; }
+          100% { background-position: 0% 50%; }
+        }
+
+        @media (max-width: 600px) {
+          h1 { font-size: 42px; }
+          .search-box { width: 90%; }
+        }
+    </style>
+</head>
+
+<body>
+<div class="wave"></div>
+<div class="wave"></div>
+<div class="glow glow-1"></div>
+<div class="glow glow-2"></div>
+<div class="noise"></div>
+
+<div class="content-wrapper">
+    <h1>HarmoJam</h1>
+
+    <div class="search-wrapper">
+        <div class="search-box">
+            <input id="searchInput" type="text" placeholder="Search artists, tracks..." autocomplete="off"/>
+            <button class="search-btn" id="searchBtn">
+                <svg viewBox="0 0 24 24">
+                    <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    <p class="tagline" id="statusText">Discover the rhythm of the universe...</p>
+</div>
+
+<div class="results-area" id="resultsArea">
+</div>
+
+<script>
+    // --- GLOBAL DEĞİŞKENLER (Müzik kontrolü için) ---
+    let currentAudio = null;
+    let currentBtn = null;
+
+    const searchBtn = document.getElementById('searchBtn');
+    const searchInput = document.getElementById('searchInput');
+    const resultsArea = document.getElementById('resultsArea');
+    const contentWrapper = document.querySelector('.content-wrapper');
+    const statusText = document.getElementById('statusText');
+
+    // Backend Portu (9090)
+    const API_URL = "http://localhost:9090";
+
+    // --- 1. ARAMA FONKSİYONU ---
+    function performSearch() {
+      const query = searchInput.value.trim();
+      if (!query) return;
+
+      // Arama moduna geç (Google gibi yukarı kayar)
+      document.body.classList.add('results-mode');
+
+      searchBtn.classList.add('loading');
+      resultsArea.classList.remove('show');
+      statusText.innerText = "Searching across the cosmos...";
+
+      // Backtick (`) kullanarak fetch isteği
+      fetch(`${API_URL}/search?q=${query}`)
+        .then(response => response.json())
+        .then(data => {
+            renderCards(data);
+            statusText.innerText = `Results for "${query}"`;
+        })
+        .catch(err => {
+            console.error(err);
+            statusText.innerText = "Error connecting to the stars (Backend error)";
+        })
+        .finally(() => {
+            searchBtn.classList.remove('loading');
+            resultsArea.classList.add('show');
+
+            // Sayfa açıldığında yumuşakça yukarı kaydır
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+    }
+
+    // --- 2. MIX (ÖNERİ) FONKSİYONU ---
+    function oneriGetir(sarkiAdi, sarkiciAdi) {
+        searchBtn.classList.add('loading');
+        statusText.innerText = `Finding vibes similar to "${sarkiAdi}"...`;
+
+        resultsArea.innerHTML = '';
+        searchInput.value = "";
+
+        // Arama modunu koru
+        document.body.classList.add('results-mode');
+
+        const url = `${API_URL}/recommend?name=${encodeURIComponent(sarkiAdi)}&artist=${encodeURIComponent(sarkiciAdi)}`;
+
+        fetch(url)
+            .then(response => response.json())
+            .then(data => {
+                renderCards(data);
+                statusText.innerText = `Mix based on "${sarkiAdi}"`;
+            })
+            .catch(err => {
+                console.error(err);
+                statusText.innerText = "Signal lost...";
+            })
+            .finally(() => {
+                searchBtn.classList.remove('loading');
+                resultsArea.classList.add('show');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            });
+    }
+
+    // --- 3. KARTLARI OLUŞTURMA ---
+    function renderCards(data) {
+        resultsArea.innerHTML = "";
+
+        if (!data || data.length === 0) {
+            resultsArea.innerHTML = `<div class="result-placeholder">No music found in this galaxy.</div>`;
+            return;
+        }
+
+        data.forEach(sarki => {
+            // Backend değişkenleri: muzikUrl, resimUrl, isim, sarkici
+
+            let playButtonHtml = "";
+
+            // Müzik varsa OYNAT butonu, yoksa DISABLED buton
+            if (sarki.muzikUrl && sarki.muzikUrl !== "Müzik Yok" && sarki.muzikUrl !== "null") {
+                // Tırnak işaretlerini bozmasın diye escape yapıyoruz
+                const safeUrl = sarki.muzikUrl.replace(/'/g, "\\'");
+                // YENİ BUTON: onclick="togglePlay(...)"
+                playButtonHtml = `<button class="action-btn play-btn" onclick="togglePlay(this, '${safeUrl}')">▶ Play</button>`;
+            } else {
+                playButtonHtml = `<button class="action-btn play-btn" style="opacity:0.5; cursor:not-allowed" disabled>No Audiogit --version</button>`;
+            }
+
+            // İsimlerdeki tırnak işaretleri hatasını önlemek için
+            const safeName = sarki.isim ? sarki.isim.replace(/'/g, "\\'") : "";
+            const safeArtist = sarki.sarkici ? sarki.sarkici.replace(/'/g, "\\'") : "";
+
+            const cardHTML = `
+                <div class="card">
+                    <img src="${sarki.resimUrl}" onerror="this.src='https://via.placeholder.com/300?text=No+Image'">
+                    <h3>${sarki.isim}</h3>
+                    <p>${sarki.sarkici}</p>
+
+                    <div class="card-actions">
+                        ${playButtonHtml}
+                        <button onclick="oneriGetir('${safeName}', '${safeArtist}')" class="action-btn recommend-btn">Mix</button>
+                    </div>
+                </div>
+            `;
+            resultsArea.innerHTML += cardHTML;
+        });
+    }
+
+    // --- 4. YENİ MÜZİK ÇALAR (SAYFA İÇİ) ---
+    function togglePlay(btn, url) {
+        // 1. Durum: Şu an çalan şarkıya tekrar basıldı (Durdur/Devam Et)
+        if (currentAudio && currentAudio.src === url) {
+            if (currentAudio.paused) {
+                currentAudio.play();
+                btn.innerHTML = "⏸ Stop"; // İkon değişir
+            } else {
+                currentAudio.pause();
+                btn.innerHTML = "▶ Play";
+            }
+        }
+        // 2. Durum: Farklı bir şarkıya basıldı
+        else {
+            // Önceki şarkı varsa durdur
+            if (currentAudio) {
+                currentAudio.pause();
+                // Önceki butonun yazısını düzelt
+                if (currentBtn) currentBtn.innerHTML = "▶ Play";
+            }
+
+            // Yeni şarkıyı başlat
+            currentAudio = new Audio(url);
+            currentAudio.play();
+
+            // Aktif buton ve sesi güncelle
+            currentBtn = btn;
+            btn.innerHTML = "⏸ Stop";
+
+            // Şarkı bitince butonu eski haline getir
+            currentAudio.onended = function() {
+                btn.innerHTML = "▶ Play";
+            };
+        }
+    }
+
+    // Enter tuşu ve Tıklama olayları
+    searchBtn.addEventListener('click', performSearch);
+    searchInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') performSearch();
+    });
+</script>
+</body>
+</html>
