@@ -94,12 +94,12 @@
             height: auto;
         }*/
         body.results-mode {
-            justify-content: flex-start; /* İçeriği tepeye yasla */
+            justify-content: flex-start;
             padding-top: 40px;
             padding-bottom: 40px;
-            height: auto; /* Yükseklik kilidini aç */
-            min-height: 100vh; /* En az ekran boyu kadar olsun (arkaplan bozulmasın) */
-            overflow-x: hidden; /* Yanlara taşmayı engelle */
+            height: auto;
+            min-height: 100vh;
+            overflow-x: hidden;
         }
 
         .content-wrapper.searched {
@@ -370,7 +370,7 @@
 </div>
 
 <script>
-    // --- GLOBAL DEĞİŞKENLER (Müzik kontrolü için) ---
+
     let currentAudio = null;
     let currentBtn = null;
 
@@ -383,19 +383,19 @@
     // Backend Portu (9090)
     const API_URL = "http://localhost:9090";
 
-    // --- 1. ARAMA FONKSİYONU ---
+
     function performSearch() {
       const query = searchInput.value.trim();
       if (!query) return;
 
-      // Arama moduna geç (Google gibi yukarı kayar)
+
       document.body.classList.add('results-mode');
 
       searchBtn.classList.add('loading');
       resultsArea.classList.remove('show');
       statusText.innerText = "Searching across the cosmos...";
 
-      // Backtick (`) kullanarak fetch isteği
+
       fetch(`${API_URL}/search?q=${query}`)
         .then(response => response.json())
         .then(data => {
@@ -410,12 +410,12 @@
             searchBtn.classList.remove('loading');
             resultsArea.classList.add('show');
 
-            // Sayfa açıldığında yumuşakça yukarı kaydır
+
             window.scrollTo({ top: 0, behavior: 'smooth' });
         });
     }
 
-    // --- 2. MIX (ÖNERİ) FONKSİYONU ---
+
     function oneriGetir(sarkiAdi, sarkiciAdi) {
         searchBtn.classList.add('loading');
         statusText.innerText = `Finding vibes similar to "${sarkiAdi}"...`;
@@ -423,7 +423,7 @@
         resultsArea.innerHTML = '';
         searchInput.value = "";
 
-        // Arama modunu koru
+
         document.body.classList.add('results-mode');
 
         const url = `${API_URL}/recommend?name=${encodeURIComponent(sarkiAdi)}&artist=${encodeURIComponent(sarkiciAdi)}`;
@@ -445,7 +445,7 @@
             });
     }
 
-    // --- 3. KARTLARI OLUŞTURMA ---
+
     function renderCards(data) {
         resultsArea.innerHTML = "";
 
@@ -455,21 +455,21 @@
         }
 
         data.forEach(sarki => {
-            // Backend değişkenleri: muzikUrl, resimUrl, isim, sarkici
+
 
             let playButtonHtml = "";
 
-            // Müzik varsa OYNAT butonu, yoksa DISABLED buton
+
             if (sarki.muzikUrl && sarki.muzikUrl !== "Müzik Yok" && sarki.muzikUrl !== "null") {
-                // Tırnak işaretlerini bozmasın diye escape yapıyoruz
+
                 const safeUrl = sarki.muzikUrl.replace(/'/g, "\\'");
-                // YENİ BUTON: onclick="togglePlay(...)"
+
                 playButtonHtml = `<button class="action-btn play-btn" onclick="togglePlay(this, '${safeUrl}')">▶ Play</button>`;
             } else {
                 playButtonHtml = `<button class="action-btn play-btn" style="opacity:0.5; cursor:not-allowed" disabled>No Audiogit --version</button>`;
             }
 
-            // İsimlerdeki tırnak işaretleri hatasını önlemek için
+
             const safeName = sarki.isim ? sarki.isim.replace(/'/g, "\\'") : "";
             const safeArtist = sarki.sarkici ? sarki.sarkici.replace(/'/g, "\\'") : "";
 
@@ -489,43 +489,43 @@
         });
     }
 
-    // --- 4. YENİ MÜZİK ÇALAR (SAYFA İÇİ) ---
+
     function togglePlay(btn, url) {
-        // 1. Durum: Şu an çalan şarkıya tekrar basıldı (Durdur/Devam Et)
+
         if (currentAudio && currentAudio.src === url) {
             if (currentAudio.paused) {
                 currentAudio.play();
-                btn.innerHTML = "⏸ Stop"; // İkon değişir
+                btn.innerHTML = "⏸ Stop";
             } else {
                 currentAudio.pause();
                 btn.innerHTML = "▶ Play";
             }
         }
-        // 2. Durum: Farklı bir şarkıya basıldı
+
         else {
-            // Önceki şarkı varsa durdur
+
             if (currentAudio) {
                 currentAudio.pause();
-                // Önceki butonun yazısını düzelt
+
                 if (currentBtn) currentBtn.innerHTML = "▶ Play";
             }
 
-            // Yeni şarkıyı başlat
+
             currentAudio = new Audio(url);
             currentAudio.play();
 
-            // Aktif buton ve sesi güncelle
+
             currentBtn = btn;
             btn.innerHTML = "⏸ Stop";
 
-            // Şarkı bitince butonu eski haline getir
+
             currentAudio.onended = function() {
                 btn.innerHTML = "▶ Play";
             };
         }
     }
 
-    // Enter tuşu ve Tıklama olayları
+
     searchBtn.addEventListener('click', performSearch);
     searchInput.addEventListener('keypress', (e) => {
       if (e.key === 'Enter') performSearch();

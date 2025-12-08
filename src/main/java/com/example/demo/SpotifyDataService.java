@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import org.springframework.http.HttpEntity;
@@ -25,8 +26,10 @@ public class SpotifyDataService {
     //Sportify arama url'si
     private final String SEARCH_URL = "https://api.spotify.com/v1/search";
 
-    //Last.fm API
-    private final String LASTFM_API_KEY = "f3c1dfea0690b3aa19d52680bc8f5c8d";
+
+
+    @Value("${lastfm.api.key}")//Last.fm API
+    private String LASTFM_API_KEY;
 
     // Arama Metodu
     public List<Song> searchSong(String query) {
@@ -164,7 +167,7 @@ public class SpotifyDataService {
                 return data.get(0).path("preview").asText();
             }
         } catch (Exception e) {
-            // Hata olursa (bulamazsa) ses etme, null dön
+            // Hata olursa null dön
         }
         return "Müzik Yok";
     }
