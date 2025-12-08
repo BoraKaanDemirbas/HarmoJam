@@ -1,15 +1,15 @@
-#HarmoJam
+# HarmoJam
 
 **HarmoJam** is a music discovery web application that uses Spotify, Last.fm and Deezer APIs.
 
-##Features
+## Features
 
 -**Advanced search engine** provides flexible, advanced music search engine using the Spotify API.
 -**Recommendations** HarmoJam uses the Last.fm API to create "mixes" that recommend songs based on your taste. 
 -**Inline player** Allows users to play/stop music previews directly within the interface without interruption.
 -**Aesthetic Design** With a modern colour palette and smooth animations, HarmoJam aims to enhance the user experience.
 
-##Tech Stack
+## Tech Stack
 
 **Backend**
 * Java 17
