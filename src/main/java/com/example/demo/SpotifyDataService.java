@@ -34,7 +34,7 @@ public class SpotifyDataService {
     // Arama Metodu
     public List<Song> searchSong(String query) {
         System.out.println("SPOTIFY: Arama yapılıyor -> " + query);//terminal kontrol
-        String url = SEARCH_URL + "?q=" + query + "&type=track&limit=12";//spoti api arama urlsini üzerine sorgu işlemi için gerekenler girilir
+        String url = SEARCH_URL + "?q=" + query + "&type=track&limit=12&market=TR";//spoti api arama urlsini üzerine sorgu işlemi için gerekenler girilir
         return fetchFromSpotify(url);//arama sonucu ekrana yazdırılacak olan sonuçları filtrelediğimiz metodu çağırıyoruz
     }
 
