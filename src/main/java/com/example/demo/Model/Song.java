@@ -1,4 +1,4 @@
-package com.example.demo;
+package com.example.demo.Model;
 
 public class Song {//değişkenler
     private String id;
@@ -24,5 +24,9 @@ public class Song {//değişkenler
     public String getSarkici() { return sarkici; }
     public String getResimUrl() { return resimUrl; }
     public String getMuzikUrl() { return muzikUrl; }
+
+    public void setMuzikUrl(String muzikUrl) {
+        this.muzikUrl = muzikUrl;
+    }
 
 }

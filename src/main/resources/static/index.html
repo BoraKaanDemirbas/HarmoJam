@@ -426,7 +426,7 @@
 
         document.body.classList.add('results-mode');
 
-        const url = `${API_URL}/recommend?name=${encodeURIComponent(sarkiAdi)}&artist=${encodeURIComponent(sarkiciAdi)}`;
+        const url = `${API_URL}/recommend?track=${encodeURIComponent(sarkiAdi)}&artist=${encodeURIComponent(sarkiciAdi)}`;
 
         fetch(url)
             .then(response => response.json())
@@ -466,7 +466,7 @@
 
                 playButtonHtml = `<button class="action-btn play-btn" onclick="togglePlay(this, '${safeUrl}')">▶ Play</button>`;
             } else {
-                playButtonHtml = `<button class="action-btn play-btn" style="opacity:0.5; cursor:not-allowed" disabled>No Audiogit --version</button>`;
+                playButtonHtml = `<button class="action-btn play-btn" style="opacity:0.5; cursor:not-allowed" disabled>No Audio</button>`;
             }
 
 

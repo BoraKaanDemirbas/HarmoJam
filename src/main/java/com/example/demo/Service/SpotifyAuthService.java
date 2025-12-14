@@ -1,6 +1,5 @@
-package com.example.demo;
+package com.example.demo.Service;
 
-import com.fasterxml.jackson.databind.JsonNode;//önemli importlar
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.springframework.beans.factory.annotation.Value;
