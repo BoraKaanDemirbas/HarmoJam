@@ -1,5 +1,7 @@
 package com.example.demo;
 
+import com.example.demo.Model.Song;
+import com.example.demo.Service.SpotifyDataService;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.RestController;//restcontroller importu
 
