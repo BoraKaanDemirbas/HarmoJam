@@ -1,11 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>HarmoJam</title>
-
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;700;800&display=swap" rel="stylesheet">
 
     <style>
@@ -14,11 +12,9 @@
           --bg2: #3b0a73;
           --bg3: #ff6cab;
           --accent: #ffb347;
-          --input-bg: rgba(18, 16, 35, 0.6);
         }
 
         * { box-sizing: border-box; }
-
 
         body {
           margin: 0;
@@ -26,84 +22,34 @@
           min-height: 100vh;
           display: flex;
           flex-direction: column;
-          justify-content: center;
           align-items: center;
+          justify-content: center;
           color: #fff;
-          position: relative;
-          overflow-x: hidden;
-
           background:
             radial-gradient(circle at 10% 0%, rgba(255, 108, 171, 0.28) 0, transparent 50%),
             radial-gradient(circle at 90% 100%, rgba(255, 179, 71, 0.25) 0, transparent 55%),
             linear-gradient(135deg, var(--bg1), var(--bg2), var(--bg3));
           background-size: 200% 200%;
           animation: gradientShift 18s ease-in-out infinite;
+          overflow-x: hidden;
+          padding: 20px;
         }
 
-        .wave {
-          position: fixed;//absolute
-          width: 150%;
-          height: 150%;
-          background: radial-gradient(circle, rgba(255, 255, 255, 0.05) 0%, transparent 60%);
-          animation: floatWave 20s infinite ease-in-out;
-          filter: blur(90px);
-          mix-blend-mode: screen;
-          pointer-events: none;
-          z-index: 0;
-        }
-        .wave:nth-child(1) { top: -25%; left: -15%; }
-        .wave:nth-child(2) { bottom: -25%; right: -20%; animation-duration: 24s; }
-
-        .glow {
-          position: fixed;//absolute
-          width: 420px;
-          height: 420px;
-          border-radius: 50%;
-          filter: blur(60px);
-          opacity: 0.5;
-          mix-blend-mode: screen;
-          pointer-events: none;
-          z-index: 0;
-        }
-        .glow.glow-1 { top: 10%; right: 5%; background: radial-gradient(circle, rgba(255, 179, 71, 0.65), transparent 60%); }
-        .glow.glow-2 { bottom: -10%; left: -5%; background: radial-gradient(circle, rgba(120, 212, 255, 0.7), transparent 60%); }
-
-        .noise {
-          pointer-events: none;
-          position: fixed;
-          inset: 0;
-          background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 160 160' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.1' numOctaves='3' stitchTiles='noStitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.18'/%3E%3C/svg%3E");
-          mix-blend-mode: soft-light;
-          opacity: 0.4;
-          z-index: 1;
+        body.results-mode {
+            justify-content: flex-start;
+            padding-top: 60px;
         }
 
         .content-wrapper {
           position: relative;
           text-align: center;
           width: 100%;
-          max-width: 700px;
+          max-width: 1200px;
           z-index: 10;
-          padding: 20px;
           transition: transform 0.5s ease;
-        }
-
-        /*body.results-mode {
-            justify-content: flex-start;
-            padding-top: 40px;
-            height: auto;
-        }*/
-        body.results-mode {
-            justify-content: flex-start;
-            padding-top: 40px;
-            padding-bottom: 40px;
-            height: auto;
-            min-height: 100vh;
-            overflow-x: hidden;
-        }
-
-        .content-wrapper.searched {
-            margin-bottom: 20px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
         }
 
         h1 {
@@ -117,326 +63,300 @@
           filter: drop-shadow(0 4px 15px rgba(0,0,0,0.3));
         }
 
-        .tagline {
-          margin-top: 16px;
-          font-size: 14px;
-          font-weight: 400;
-          color: rgba(255, 255, 255, 0.65);
-          letter-spacing: 0.5px;
-          text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        /* MENÜ */
+        .nav-menu {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+        .nav-btn {
+            background: transparent;
+            border: none;
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 1.2rem;
+            cursor: pointer;
+            padding: 10px 15px;
+            transition: all 0.3s ease;
+            border-bottom: 2px solid transparent;
+            font-weight: 600;
+        }
+        .nav-btn:hover { color: white; }
+        .nav-btn.active {
+            color: #fff;
+            border-bottom: 2px solid #D500F9;
+            text-shadow: 0 0 10px rgba(213, 0, 249, 0.5);
         }
 
-        .search-wrapper {
-          display: flex;
-          justify-content: center;
-          position: relative;
+        /* ARAMA KUTUSU & GEÇMİŞ */
+        #search-view { width: 100%; display: flex; flex-direction: column; align-items: center; }
+
+        .search-container-outer {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 20px;
         }
 
         .search-box {
           display: flex;
           align-items: center;
           width: 100%;
-          max-width: 580px;
+          max-width: 600px;
           background: rgba(15, 8, 32, 0.4);
           backdrop-filter: blur(15px);
           border-radius: 999px;
-          padding: 8px;
-          padding-left: 24px;
+          padding: 10px 10px 10px 24px;
           border: 1px solid rgba(255, 255, 255, 0.15);
           box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
-          transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+          transition: all 0.3s;
         }
-
         .search-box:focus-within {
-          background: rgba(15, 8, 32, 0.7);
-          border-color: rgba(255, 179, 71, 0.5);
-          box-shadow: 0 15px 45px rgba(0, 0, 0, 0.5), 0 0 0 2px rgba(255, 179, 71, 0.2);
-          transform: scale(1.02);
+            background: rgba(15, 8, 32, 0.7);
+            border-color: rgba(255, 179, 71, 0.5);
+            transform: scale(1.02);
+        }
+        .search-box input { flex: 1; border: none; outline: none; font-size: 18px; color: #fff; background: transparent; font-family: inherit; }
+        .search-btn { width: 50px; height: 50px; background: radial-gradient(circle at 30% 0%, #ffe6b3 0, #ffb347 30%, #ff6cab 100%); border: none; display: flex; justify-content: center; align-items: center; cursor: pointer; border-radius: 50%; margin-left: 10px; transition: transform 0.2s; }
+        .search-btn:hover { transform: scale(1.05); filter: brightness(1.1); }
+        .search-btn svg { width: 22px; height: 22px; fill: #2a0a4a; }
+
+        /* --- SEARCH HISTORY CHIPS --- */
+        .history-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 15px;
+            max-width: 600px;
         }
 
-        .search-box input {
-          flex: 1;
-          padding: 12px 0;
-          border: none;
-          outline: none;
-          font-size: 17px;
-          font-weight: 500;
-          color: #fff;
-          background: transparent;
-          font-family: inherit;
+        .history-chip {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            color: #ddd;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
-        .search-box input::placeholder {
-          color: rgba(255, 255, 255, 0.5);
+        .history-chip:hover {
+            background: rgba(213, 0, 249, 0.2);
+            border-color: #D500F9;
+            color: white;
+            transform: translateY(-2px);
         }
 
-        .search-btn {
-          width: 50px;
-          height: 50px;
-          background: radial-gradient(circle at 30% 0%, #ffe6b3 0, #ffb347 30%, #ff6cab 100%);
-          border: none;
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          cursor: pointer;
-          border-radius: 50%;
-          box-shadow: 0 8px 20px rgba(255, 108, 171, 0.3);
-          transition: all 0.2s ease;
-          margin-left: 10px;
+        .clear-history-btn {
+            font-size: 0.8rem;
+            color: rgba(255,255,255,0.4);
+            background: none;
+            border: none;
+            cursor: pointer;
+            text-decoration: underline;
+            margin-left: 10px;
         }
+        .clear-history-btn:hover { color: #ff6b6b; }
 
-        .search-btn:hover {
-          transform: translateY(-2px) scale(1.05);
-          filter: brightness(1.1);
-        }
+        .tagline { margin-top: 10px; font-size: 14px; color: rgba(255, 255, 255, 0.65); }
 
-        .search-btn:active {
-          transform: scale(0.95);
-        }
-
-        .search-btn svg {
-          width: 20px;
-          height: 20px;
-          fill: #2a0a4a;
-        }
-
-        .search-btn.loading svg { display: none; }
-        .search-btn.loading::after {
-          content: "";
-          width: 18px;
-          height: 18px;
-          border: 2px solid rgba(42, 10, 74, 0.3);
-          border-top-color: #2a0a4a;
-          border-radius: 50%;
-          animation: spin 0.8s linear infinite;
-        }
-
-        /* Results Area */
+        /* KART ALANI */
         .results-area {
           width: 100%;
-          max-width: 1000px;
-          opacity: 0;
-          transform: translateY(20px);
-          transition: all 0.5s ease;
-          z-index: 10;
-          pointer-events: none;
-          margin-top: 20px;
-
-          /* BURASI ESKİ HALİ: Flex yapısı, sığdığı kadar koyar (genelde 3) */
+          max-width: 1200px;
           display: flex;
           flex-wrap: wrap;
           gap: 20px;
           justify-content: center;
+          margin-top: 30px;
+          opacity: 0;
+          transform: translateY(20px);
+          transition: all 0.5s ease;
+          pointer-events: none;
         }
+        .results-area.show { opacity: 1; transform: translateY(0); pointer-events: auto; }
 
-        .results-area.show {
-          opacity: 1;
-          transform: translateY(0);
-          pointer-events: auto;
-        }
-
-        /* Kart Tasarımı */
+        /* KART TASARIMI */
         .card {
           background: rgba(20, 15, 45, 0.6);
           backdrop-filter: blur(10px);
           border: 1px solid rgba(255, 255, 255, 0.1);
-          /* Kart genişliği sabit 300px civarı olsun ki sığmazsa aşağı geçsin */
-          width: 220px;
+          width: 250px;
           padding: 15px;
           border-radius: 20px;
           text-align: left;
-          transition: transform 0.3s ease, background 0.3s ease;
+          transition: transform 0.3s, background 0.3s;
           box-shadow: 0 10px 20px rgba(0,0,0,0.2);
         }
+        .card:hover { transform: translateY(-8px); background: rgba(30, 25, 60, 0.8); border-color: rgba(255, 179, 71, 0.3); }
+        .card img { width: 100%; border-radius: 12px; margin-bottom: 12px; aspect-ratio: 1/1; object-fit: cover; }
+        .card h3 { margin: 0 0 5px 0; font-size: 1.1rem; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .card p { margin: 0 0 15px 0; font-size: 0.9rem; color: rgba(255, 255, 255, 0.6); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-        .card:hover {
-            transform: translateY(-8px);
-            background: rgba(30, 25, 60, 0.8);
-            border-color: rgba(255, 179, 71, 0.3);
-        }
-
-        .card img {
-            width: 100%;
-            border-radius: 12px;
-            margin-bottom: 12px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-        }
-
-        .card h3 {
-            margin: 0 0 5px 0;
-            font-size: 1.1rem;
-            font-weight: 700;
-            color: #fff;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .card p {
-            margin: 0 0 15px 0;
-            font-size: 0.9rem;
-            color: rgba(255, 255, 255, 0.6);
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .card-actions {
-            display: flex;
-            gap: 10px;
-        }
-
-        .action-btn {
-            flex: 1;
-            padding: 8px 0;
-            text-align: center;
-            border-radius: 50px;
-            font-size: 0.85rem;
-            font-weight: 600;
-            text-decoration: none;
-            cursor: pointer;
-            border: none;
-            transition: 0.2s;
-        }
-
-        .play-btn {
-            background: rgba(255, 255, 255, 0.1);
-            color: white;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
+        .card-actions { display: flex; gap: 8px; margin-bottom: 10px; }
+        .action-btn { flex: 1; padding: 8px 0; border-radius: 50px; font-size: 0.85rem; font-weight: 700; cursor: pointer; border: none; transition: 0.2s; }
+        .play-btn { background: rgba(255, 255, 255, 0.1); color: white; border: 1px solid rgba(255, 255, 255, 0.2); }
         .play-btn:hover { background: rgba(255, 255, 255, 0.2); }
-
-        .recommend-btn {
-            background: linear-gradient(135deg, #ffb347, #ff6cab);
-            color: #140b33;
-        }
+        .recommend-btn { background: linear-gradient(135deg, #ffb347, #ff6cab); color: #140b33; width: 100%; border: none; padding: 8px; border-radius: 50px; font-weight: bold; cursor: pointer; }
         .recommend-btn:hover { filter: brightness(1.1); }
 
-        .result-placeholder {
-          width: 100%;
-          background: rgba(15, 8, 32, 0.5);
-          backdrop-filter: blur(10px);
-          border-radius: 16px;
-          padding: 30px;
-          color: rgba(255,255,255,0.7);
-          border: 1px solid rgba(255,255,255,0.1);
-          text-align: center;
-        }
+        #favorites-view { width: 100%; display: none; flex-direction: column; align-items: center; }
+        .result-placeholder { width: 100%; padding: 40px; color: rgba(255,255,255,0.5); text-align: center; font-size: 1.1rem; border: 1px dashed rgba(255,255,255,0.1); border-radius: 20px; }
 
-        @keyframes spin { to { transform: rotate(360deg); } }
-        @keyframes floatWave {
-          0% { transform: translateY(0px) rotate(0deg); }
-          50% { transform: translateY(40px) rotate(10deg); }
-          100% { transform: translateY(0px) rotate(0deg); }
-        }
-        @keyframes gradientShift {
-          0% { background-position: 0% 50%; }
-          50% { background-position: 100% 50%; }
-          100% { background-position: 0% 50%; }
-        }
+        /* ARKA PLAN EFEKTLERİ */
+        .wave { position: fixed; width: 150%; height: 150%; background: radial-gradient(circle, rgba(255, 255, 255, 0.05) 0%, transparent 60%); animation: floatWave 20s infinite ease-in-out; pointer-events: none; z-index: -1; }
+        .wave:nth-child(1) { top: -25%; left: -15%; }
+        .wave:nth-child(2) { bottom: -25%; right: -20%; animation-duration: 24s; }
+        .glow { position: fixed; width: 420px; height: 420px; border-radius: 50%; filter: blur(60px); opacity: 0.5; pointer-events: none; z-index: -1; }
+        .glow-1 { top: 10%; right: 5%; background: radial-gradient(circle, rgba(255, 179, 71, 0.65), transparent 60%); }
+        .glow-2 { bottom: -10%; left: -5%; background: radial-gradient(circle, rgba(120, 212, 255, 0.7), transparent 60%); }
+        .noise { pointer-events: none; position: fixed; inset: 0; background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 160 160' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.1' numOctaves='3' stitchTiles='noStitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.18'/%3E%3C/svg%3E"); mix-blend-mode: soft-light; opacity: 0.4; z-index: 0; }
 
-        @media (max-width: 600px) {
-          h1 { font-size: 42px; }
-          .search-box { width: 90%; }
-        }
+        @keyframes floatWave { 0% { transform: translateY(0px) rotate(0deg); } 50% { transform: translateY(40px) rotate(10deg); } 100% { transform: translateY(0px) rotate(0deg); } }
+        @keyframes gradientShift { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+        @media (max-width: 600px) { h1 { font-size: 42px; } .search-box { width: 90%; } }
     </style>
 </head>
 
 <body>
-<div class="wave"></div>
-<div class="wave"></div>
-<div class="glow glow-1"></div>
-<div class="glow glow-2"></div>
+<div class="wave"></div><div class="wave"></div>
+<div class="glow glow-1"></div><div class="glow glow-2"></div>
 <div class="noise"></div>
 
 <div class="content-wrapper">
     <h1>HarmoJam</h1>
 
-    <div class="search-wrapper">
-        <div class="search-box">
-            <input id="searchInput" type="text" placeholder="Search artists, tracks..." autocomplete="off"/>
-            <button class="search-btn" id="searchBtn">
-                <svg viewBox="0 0 24 24">
-                    <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
-                </svg>
-            </button>
-        </div>
+    <div class="nav-menu">
+        <button onclick="showSearch()" class="nav-btn active" id="btn-search">Search</button>
+        <button onclick="showFavorites()" class="nav-btn" id="btn-fav">Favorites</button>
     </div>
 
-    <p class="tagline" id="statusText">Discover the rhythm of the universe...</p>
-</div>
+    <div id="search-view">
+        <div class="search-container-outer">
+            <div class="search-box">
+                <input id="searchInput" type="text" placeholder="Search artists, tracks..." autocomplete="off"/>
+                <button class="search-btn" id="searchBtn" onclick="performSearch()">
+                    <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+                </button>
+            </div>
 
-<div class="results-area" id="resultsArea">
+            <div id="historyContainer" class="history-container">
+            </div>
+        </div>
+
+        <p class="tagline" id="statusText">Discover the rhythm of the universe...</p>
+        <div class="results-area" id="resultsArea"></div>
+    </div>
+
+    <div id="favorites-view">
+        <!--h2 style="margin-bottom: 20px;">Your Collection</h2-->
+        <div class="results-area" id="favoritesArea">
+            <p style="opacity: 0.5;">Loading...</p>
+        </div>
+    </div>
 </div>
 
 <script>
-
+    const API_URL = "";//http://localhost:9090
+    let lastSearchResults = [];
     let currentAudio = null;
     let currentBtn = null;
+    let favoriteSongIds = new Set();
 
-    const searchBtn = document.getElementById('searchBtn');
     const searchInput = document.getElementById('searchInput');
+    const searchBtn = document.getElementById('searchBtn');
     const resultsArea = document.getElementById('resultsArea');
-    const contentWrapper = document.querySelector('.content-wrapper');
+    const favoritesArea = document.getElementById('favoritesArea');
     const statusText = document.getElementById('statusText');
+    const historyContainer = document.getElementById('historyContainer');
 
-    // Backend Portu (9090)
-    const API_URL = "";//http://localhost:9090
+    // --- BAŞLANGIÇ AYARLARI ---
+    window.addEventListener('load', () => {
+        refreshFavoriteIds();
+        renderHistory(); // Geçmişi yükle
+    });
 
+    // --- SEARCH HISTORY SİSTEMİ (YENİ) ---
+    function saveHistory(query) {
+        let history = JSON.parse(localStorage.getItem('harmoJamHistory')) || [];
+        // Eğer zaten varsa sil (en başa eklemek için)
+        history = history.filter(item => item !== query);
+        // En başa ekle
+        history.unshift(query);
+        // Sadece son 5 aramayı tut
+        if (history.length > 5) history.pop();
 
-    function performSearch() {
-      const query = searchInput.value.trim();
-      if (!query) return;
-
-
-      document.body.classList.add('results-mode');
-
-      searchBtn.classList.add('loading');
-      resultsArea.classList.remove('show');
-      statusText.innerText = "Searching across the cosmos...";
-
-
-      fetch(`${API_URL}/search?q=${query}`)
-        .then(response => response.json())
-        .then(data => {
-            renderCards(data);
-            statusText.innerText = `Results for "${query}"`;
-        })
-        .catch(err => {
-            console.error(err);
-            statusText.innerText = "Error connecting to the stars (Backend error)";
-        })
-        .finally(() => {
-            searchBtn.classList.remove('loading');
-            resultsArea.classList.add('show');
-
-
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        });
+        localStorage.setItem('harmoJamHistory', JSON.stringify(history));
+        renderHistory();
     }
 
+    function renderHistory() {
+        let history = JSON.parse(localStorage.getItem('harmoJamHistory')) || [];
+        historyContainer.innerHTML = "";
 
-    function oneriGetir(sarkiAdi, sarkiciAdi) {
-        searchBtn.classList.add('loading');
-        statusText.innerText = `Finding vibes similar to "${sarkiAdi}"...`;
+        if (history.length === 0) return;
 
-        resultsArea.innerHTML = '';
-        searchInput.value = "";
+        // Geçmiş etiketlerini oluştur
+        history.forEach(term => {
+            const chip = document.createElement('div');
+            chip.className = 'history-chip';
+            chip.innerHTML = `<span>🕒 ${term}</span>`;
+            chip.onclick = () => {
+                searchInput.value = term;
+                performSearch();
+            };
+            historyContainer.appendChild(chip);
+        });
 
+        // Temizle butonu ekle
+        const clearBtn = document.createElement('button');
+        clearBtn.className = 'clear-history-btn';
+        clearBtn.innerText = 'Clear';
+        clearBtn.onclick = () => {
+            localStorage.removeItem('harmoJamHistory');
+            renderHistory();
+        };
+        historyContainer.appendChild(clearBtn);
+    }
+
+    function refreshFavoriteIds() {
+        fetch(`${API_URL}/favorites/all`)
+            .then(res => res.json())
+            .then(data => {
+                favoriteSongIds.clear();
+                data.forEach(song => favoriteSongIds.add(song.id));
+                updateSearchButtons();
+            })
+            .catch(err => console.error("Sync Error:", err));
+    }
+
+    function performSearch() {
+        const query = searchInput.value.trim();
+        if (!query) return;
+
+        saveHistory(query); // Geçmişe kaydet
 
         document.body.classList.add('results-mode');
+        searchBtn.classList.add('loading');
+        resultsArea.classList.remove('show');
+        statusText.innerText = "Searching across the cosmos...";
 
-        const url = `${API_URL}/recommend?track=${encodeURIComponent(sarkiAdi)}&artist=${encodeURIComponent(sarkiciAdi)}`;
-
-        fetch(url)
+        fetch(`${API_URL}/search?q=${query}`)
             .then(response => response.json())
             .then(data => {
-                renderCards(data);
-                statusText.innerText = `Mix based on "${sarkiAdi}"`;
+                lastSearchResults = data;
+                renderCards(data, 'search');
+                statusText.innerText = `Results for "${query}"`;
             })
             .catch(err => {
                 console.error(err);
-                statusText.innerText = "Signal lost...";
+                statusText.innerText = "Backend connection failed.";
             })
             .finally(() => {
                 searchBtn.classList.remove('loading');
@@ -445,91 +365,175 @@
             });
     }
 
+    function oneriGetir(sarkiAdi, sarkiciAdi) {
+        searchInput.value = sarkiAdi + " " + sarkiciAdi;
+        performSearch();
+    }
 
-    function renderCards(data) {
-        resultsArea.innerHTML = "";
+    function renderCards(data, mode) {
+        const targetArea = (mode === 'favorites') ? favoritesArea : resultsArea;
+        targetArea.innerHTML = "";
 
         if (!data || data.length === 0) {
-            resultsArea.innerHTML = `<div class="result-placeholder">No music found in this galaxy.</div>`;
+            targetArea.innerHTML = `<div class="result-placeholder">No music found here.</div>`;
             return;
         }
 
-        data.forEach(sarki => {
-
-
-            let playButtonHtml = "";
-
-
-            if (sarki.muzikUrl && sarki.muzikUrl !== "Müzik Yok" && sarki.muzikUrl !== "null") {
-
+        data.forEach((sarki) => {
+            let playBtnHtml = `<button class="action-btn play-btn" disabled style="opacity:0.5">No Audio</button>`;
+            if (sarki.muzikUrl && sarki.muzikUrl !== "null") {
                 const safeUrl = sarki.muzikUrl.replace(/'/g, "\\'");
-
-                playButtonHtml = `<button class="action-btn play-btn" onclick="togglePlay(this, '${safeUrl}')">▶ Play</button>`;
-            } else {
-                playButtonHtml = `<button class="action-btn play-btn" style="opacity:0.5; cursor:not-allowed" disabled>No Audio</button>`;
+                playBtnHtml = `<button class="action-btn play-btn" onclick="togglePlay(this, '${safeUrl}')">▶ Play</button>`;
             }
-
 
             const safeName = sarki.isim ? sarki.isim.replace(/'/g, "\\'") : "";
             const safeArtist = sarki.sarkici ? sarki.sarkici.replace(/'/g, "\\'") : "";
+
+            const isFav = favoriteSongIds.has(sarki.id);
+            let favBtnHtml = "";
+
+            if (mode === 'favorites') {
+                favBtnHtml = `
+                    <button onclick="toggleFavorite('${sarki.id}', true)" class="action-btn"
+                            style="background: linear-gradient(45deg, #424242, #212121); color: white; border: 1px solid #555;">
+                        Remove
+                    </button>`;
+            } else {
+                if (isFav) {
+                    favBtnHtml = `
+                        <button id="fav-btn-search-${sarki.id}" onclick="toggleFavorite('${sarki.id}', false)" class="action-btn"
+                                style="background: linear-gradient(45deg, #424242, #212121); color: white; border: none;">
+                            Remove
+                        </button>`;
+                } else {
+                    favBtnHtml = `
+                        <button id="fav-btn-search-${sarki.id}" onclick="toggleFavorite('${sarki.id}', false)" class="action-btn"
+                                style="background: linear-gradient(45deg, #D500F9, #FF4081); color: white; border: none; font-weight: bold;">
+                            Favourite
+                        </button>`;
+                }
+            }
 
             const cardHTML = `
                 <div class="card">
                     <img src="${sarki.resimUrl}" onerror="this.src='https://via.placeholder.com/300?text=No+Image'">
                     <h3>${sarki.isim}</h3>
                     <p>${sarki.sarkici}</p>
-
                     <div class="card-actions">
-                        ${playButtonHtml}
-                        <button onclick="oneriGetir('${safeName}', '${safeArtist}')" class="action-btn recommend-btn">Mix</button>
+                        ${playBtnHtml}
+                        ${favBtnHtml}
                     </div>
+                    <button onclick="oneriGetir('${safeName}', '${safeArtist}')" class="action-btn recommend-btn" style="margin-top:10px;">Mix</button>
                 </div>
             `;
-            resultsArea.innerHTML += cardHTML;
+            targetArea.innerHTML += cardHTML;
+        });
+
+        if (mode === 'favorites') targetArea.classList.add('show');
+    }
+
+    function toggleFavorite(id, fromFavoritesPage) {
+        let sarki = lastSearchResults.find(s => s.id === id);
+        const isAlreadyFav = favoriteSongIds.has(id);
+
+        if (isAlreadyFav) {
+            if(fromFavoritesPage && !confirm("Remove this song?")) return;
+            fetch(`${API_URL}/favorites/delete/${id}`, { method: 'DELETE' })
+                .then(res => {
+                    if(res.ok) {
+                        favoriteSongIds.delete(id);
+                        if(fromFavoritesPage) getFavorites();
+                        updateSearchButtons();
+                    }
+                });
+        } else {
+            if (!sarki) return;
+            fetch(`${API_URL}/favorites/add`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(sarki)
+            })
+            .then(res => {
+                if(res.ok) {
+                    favoriteSongIds.add(id);
+                    updateSearchButtons();
+                }
+            });
+        }
+    }
+
+    function updateSearchButtons() {
+        lastSearchResults.forEach(sarki => {
+            const btn = document.getElementById(`fav-btn-search-${sarki.id}`);
+            if (btn) {
+                if (favoriteSongIds.has(sarki.id)) {
+                    btn.innerHTML = "Remove";
+                    btn.style.background = "linear-gradient(45deg, #424242, #212121)";
+                } else {
+                    btn.innerHTML = "Favourite";
+                    btn.style.background = "linear-gradient(45deg, #D500F9, #FF4081)";
+                }
+            }
         });
     }
 
+    function getFavorites() {
+        favoritesArea.innerHTML = '<div class="result-placeholder">Loading...</div>';
+        fetch(`${API_URL}/favorites/all`)
+            .then(res => res.json())
+            .then(data => {
+                favoriteSongIds.clear();
+                data.forEach(s => favoriteSongIds.add(s.id));
+
+                if(data.length === 0) {
+                    favoritesArea.innerHTML = '<div class="result-placeholder">Your collection is empty.</div>';
+                } else {
+                    // --- DÜZELTME: LİSTEYİ TERS ÇEVİR (EN SON EKLENEN EN BAŞA) ---
+                    data.reverse();
+                    renderCards(data, 'favorites');
+                }
+            });
+    }
 
     function togglePlay(btn, url) {
-
         if (currentAudio && currentAudio.src === url) {
-            if (currentAudio.paused) {
-                currentAudio.play();
-                btn.innerHTML = "⏸ Stop";
-            } else {
-                currentAudio.pause();
-                btn.innerHTML = "▶ Play";
-            }
-        }
-
-        else {
-
-            if (currentAudio) {
-                currentAudio.pause();
-
-                if (currentBtn) currentBtn.innerHTML = "▶ Play";
-            }
-
-
+            if (currentAudio.paused) { currentAudio.play(); btn.innerHTML = "⏸ Stop"; }
+            else { currentAudio.pause(); btn.innerHTML = "▶ Play"; }
+        } else {
+            if (currentAudio) { currentAudio.pause(); if (currentBtn) currentBtn.innerHTML = "▶ Play"; }
             currentAudio = new Audio(url);
             currentAudio.play();
-
-
             currentBtn = btn;
             btn.innerHTML = "⏸ Stop";
-
-
-            currentAudio.onended = function() {
-                btn.innerHTML = "▶ Play";
-            };
+            currentAudio.onended = function() { btn.innerHTML = "▶ Play"; };
         }
     }
 
+    // --- SAYFA GEÇİŞLERİ ---
+    const searchView = document.getElementById('search-view');
+    const favoritesView = document.getElementById('favorites-view');
+    const btnSearch = document.getElementById('btn-search');
+    const btnFav = document.getElementById('btn-fav');
+
+    function showSearch() {
+        searchView.style.display = 'flex';
+        favoritesView.style.display = 'none';
+        btnSearch.classList.add('active');
+        btnFav.classList.remove('active');
+        updateSearchButtons();
+    }
+
+    function showFavorites() {
+        searchView.style.display = 'none';
+        favoritesView.style.display = 'flex';
+        btnFav.classList.add('active');
+        btnSearch.classList.remove('active');
+        getFavorites();
+    }
 
     searchBtn.addEventListener('click', performSearch);
-    searchInput.addEventListener('keypress', (e) => {
-      if (e.key === 'Enter') performSearch();
-    });
+    searchInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') performSearch(); });
+
 </script>
 </body>
 </html>
