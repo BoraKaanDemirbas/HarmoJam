@@ -2,14 +2,12 @@ package com.example.demo.Controller;
 
 import com.example.demo.Model.Song;
 import com.example.demo.Service.MusicManagerService;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.RestController;//restcontroller importu
+import org.springframework.web.bind.annotation.*;
 
-import org.springframework.beans.factory.annotation.Autowired;//birbirine bağlama importu
-import org.springframework.web.bind.annotation.GetMapping;//uzantı getmapping importu
+import org.springframework.beans.factory.annotation.Autowired;//
 
-import org.springframework.web.bind.annotation.RequestParam;
-
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 @RestController
@@ -34,10 +32,19 @@ public class Controller {
         return dataService.searchSong(q);
     }*/
 
-    @GetMapping("/search")
+    /**//*@GetMapping("/search")
     public List<Song> search(@RequestParam String q) {
         System.out.println("CONTROLLER: Arama isteği geldi -> " + q);
-        return musicManager.searchSong(q);
+        String Q = java.net.URLDecoder.decode(q, java.nio.charset.StandardCharsets.UTF_8);//
+        return musicManager.searchSong(Q);
+    }*/
+
+    @PostMapping("/search")
+    public List<Song> searchMusic(@RequestBody String query) {
+
+        System.out.println("Gelen Arama: " + query);
+
+        return musicManager.searchSong(query);
     }
 /*
     @GetMapping("/recommend")
@@ -49,6 +56,7 @@ public class Controller {
     @GetMapping("/recommend")
     public List<Song> recommend(@RequestParam String track, @RequestParam String artist) {
         System.out.println("CONTROLLER: Öneri isteği geldi -> " + track);
+
         return musicManager.getRecommendation(track, artist);
     }
 

@@ -263,12 +263,16 @@
 </div>
 
 <script>
-    const API_URL = "";//http://localhost:9090
+    // --- GLOBAL AYARLAR ---
+    // Eğer localde çalışıyorsan burayı "http://localhost:9090" yap.
+    const API_URL = "http://localhost:9090";
+
     let lastSearchResults = [];
     let currentAudio = null;
     let currentBtn = null;
     let favoriteSongIds = new Set();
 
+    // HTML Elementleri
     const searchInput = document.getElementById('searchInput');
     const searchBtn = document.getElementById('searchBtn');
     const resultsArea = document.getElementById('resultsArea');
@@ -276,87 +280,55 @@
     const statusText = document.getElementById('statusText');
     const historyContainer = document.getElementById('historyContainer');
 
-    // --- BAŞLANGIÇ AYARLARI ---
+    // Sayfa Yüklendiğinde
     window.addEventListener('load', () => {
         refreshFavoriteIds();
-        renderHistory(); // Geçmişi yükle
+        renderHistory();
     });
 
-    // --- SEARCH HISTORY SİSTEMİ (YENİ) ---
-    function saveHistory(query) {
-        let history = JSON.parse(localStorage.getItem('harmoJamHistory')) || [];
-        // Eğer zaten varsa sil (en başa eklemek için)
-        history = history.filter(item => item !== query);
-        // En başa ekle
-        history.unshift(query);
-        // Sadece son 5 aramayı tut
-        if (history.length > 5) history.pop();
-
-        localStorage.setItem('harmoJamHistory', JSON.stringify(history));
-        renderHistory();
-    }
-
-    function renderHistory() {
-        let history = JSON.parse(localStorage.getItem('harmoJamHistory')) || [];
-        historyContainer.innerHTML = "";
-
-        if (history.length === 0) return;
-
-        // Geçmiş etiketlerini oluştur
-        history.forEach(term => {
-            const chip = document.createElement('div');
-            chip.className = 'history-chip';
-            chip.innerHTML = `<span>🕒 ${term}</span>`;
-            chip.onclick = () => {
-                searchInput.value = term;
-                performSearch();
-            };
-            historyContainer.appendChild(chip);
-        });
-
-        // Temizle butonu ekle
-        const clearBtn = document.createElement('button');
-        clearBtn.className = 'clear-history-btn';
-        clearBtn.innerText = 'Clear';
-        clearBtn.onclick = () => {
-            localStorage.removeItem('harmoJamHistory');
-            renderHistory();
-        };
-        historyContainer.appendChild(clearBtn);
-    }
-
-    function refreshFavoriteIds() {
-        fetch(`${API_URL}/favorites/all`)
-            .then(res => res.json())
-            .then(data => {
-                favoriteSongIds.clear();
-                data.forEach(song => favoriteSongIds.add(song.id));
-                updateSearchButtons();
-            })
-            .catch(err => console.error("Sync Error:", err));
-    }
-
+    // --- 1. FONKSİYON: MÜZİK ARAMA ---
     function performSearch() {
         const query = searchInput.value.trim();
         if (!query) return;
 
-        saveHistory(query); // Geçmişe kaydet
+        saveHistory(query);
 
+        // UI Güncelle
         document.body.classList.add('results-mode');
         searchBtn.classList.add('loading');
         resultsArea.classList.remove('show');
         statusText.innerText = "Searching across the cosmos...";
 
-        fetch(`${API_URL}/search?q=${query}`)
+        // DÜZELTME: Türkçe karakterler için encodeURIComponent şarttır.
+
+        //fetch(`${API_URL}/search?q=${encodeURIComponent(query)}`)
+
+        //const safeQuery = encodeURIComponent(query.trim());
+        //fetch(`${API_URL}/search?q=${safeQuery}`)
+
+        fetch(`${API_URL}/search`, {
+            method: 'POST',
+            body: query,  // Direkt string olarak gönderiyoruz
+            headers: {
+                'Content-Type': 'text/plain; charset=UTF-8' // UTF-8 olduğunu bağırıyoruz
+            }
+        })
             .then(response => response.json())
             .then(data => {
                 lastSearchResults = data;
                 renderCards(data, 'search');
-                statusText.innerText = `Results for "${query}"`;
+
+                if (data.length === 0) {
+                     statusText.innerText = `No results found for "${query}"`;
+                } else {
+                     statusText.innerText = `Results for "${query}"`;
+                }
             })
             .catch(err => {
                 console.error(err);
-                statusText.innerText = "Backend connection failed.";
+                statusText.innerText = "Error connecting to the stars (Backend error)";
+                resultsArea.innerHTML = `<div class="result-placeholder" style="color:#ff6b6b">Backend connection failed.</div>`;
+                resultsArea.classList.add('show');
             })
             .finally(() => {
                 searchBtn.classList.remove('loading');
@@ -365,30 +337,62 @@
             });
     }
 
-    function oneriGetir(sarkiAdi, sarkiciAdi) {
-        searchInput.value = sarkiAdi + " " + sarkiciAdi;
-        performSearch();
+    // --- 2. FONKSİYON: MIX / ÖNERİ GETİRME ---
+    function oneriGetir(trackName, artistName) {
+        showSearch();
+        // UI Güncelle
+        searchBtn.classList.add('loading');
+
+        // ESKİ METİN GERİ GELDİ:
+        statusText.innerText = `Finding vibes similar to "${trackName}"...`;
+
+        document.body.classList.add('results-mode');
+        resultsArea.classList.remove('show');
+
+        // URL Oluşturma (Türkçe Karakter Korumalı)
+        const url = `${API_URL}/recommend?track=${encodeURIComponent(trackName)}&artist=${encodeURIComponent(artistName)}`;
+
+        fetch(url)
+            .then(response => response.json())
+            .then(data => {
+                renderCards(data, 'search');
+                // ESKİ METİN GERİ GELDİ:
+                statusText.innerText = `Mix based on "${trackName}"`;
+            })
+            .catch(err => {
+                console.error(err);
+                statusText.innerText = "Signal lost...";
+            })
+            .finally(() => {
+                searchBtn.classList.remove('loading');
+                resultsArea.classList.add('show');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            });
     }
 
+    // --- KARTLARI ÇİZME ---
     function renderCards(data, mode) {
         const targetArea = (mode === 'favorites') ? favoritesArea : resultsArea;
         targetArea.innerHTML = "";
 
         if (!data || data.length === 0) {
-            targetArea.innerHTML = `<div class="result-placeholder">No music found here.</div>`;
+            targetArea.innerHTML = `<div class="result-placeholder">No music found in this galaxy.</div>`;
             return;
         }
 
         data.forEach((sarki) => {
+            // Tırnak işaretleri JS'yi bozmasın diye temizlik
+            const safeName = sarki.isim ? sarki.isim.replace(/'/g, "\\'").replace(/"/g, '&quot;') : "";
+            const safeArtist = sarki.sarkici ? sarki.sarkici.replace(/'/g, "\\'").replace(/"/g, '&quot;') : "";
+
+            // Müzik Çalar Butonu
             let playBtnHtml = `<button class="action-btn play-btn" disabled style="opacity:0.5">No Audio</button>`;
             if (sarki.muzikUrl && sarki.muzikUrl !== "null") {
                 const safeUrl = sarki.muzikUrl.replace(/'/g, "\\'");
                 playBtnHtml = `<button class="action-btn play-btn" onclick="togglePlay(this, '${safeUrl}')">▶ Play</button>`;
             }
 
-            const safeName = sarki.isim ? sarki.isim.replace(/'/g, "\\'") : "";
-            const safeArtist = sarki.sarkici ? sarki.sarkici.replace(/'/g, "\\'") : "";
-
+            // Favori Butonu Mantığı
             const isFav = favoriteSongIds.has(sarki.id);
             let favBtnHtml = "";
 
@@ -423,7 +427,9 @@
                         ${playBtnHtml}
                         ${favBtnHtml}
                     </div>
-                    <button onclick="oneriGetir('${safeName}', '${safeArtist}')" class="action-btn recommend-btn" style="margin-top:10px;">Mix</button>
+                    <button onclick="oneriGetir('${safeName}', '${safeArtist}')" class="action-btn recommend-btn" style="margin-top:10px;">
+                        Mix
+                    </button>
                 </div>
             `;
             targetArea.innerHTML += cardHTML;
@@ -432,6 +438,58 @@
         if (mode === 'favorites') targetArea.classList.add('show');
     }
 
+    // --- DİĞER FONKSİYONLAR (Aynen Korundu) ---
+
+    // Geçmiş Kaydetme
+    function saveHistory(query) {
+        let history = JSON.parse(localStorage.getItem('harmoJamHistory')) || [];
+        history = history.filter(item => item !== query);
+        history.unshift(query);
+        if (history.length > 5) history.pop();
+        localStorage.setItem('harmoJamHistory', JSON.stringify(history));
+        renderHistory();
+    }
+
+    // Geçmişi Ekrana Basma
+    function renderHistory() {
+        let history = JSON.parse(localStorage.getItem('harmoJamHistory')) || [];
+        historyContainer.innerHTML = "";
+        if (history.length === 0) return;
+
+        history.forEach(term => {
+            const chip = document.createElement('div');
+            chip.className = 'history-chip';
+            chip.innerHTML = `<span>🕒 ${term}</span>`;
+            chip.onclick = () => {
+                searchInput.value = term;
+                performSearch();
+            };
+            historyContainer.appendChild(chip);
+        });
+
+        const clearBtn = document.createElement('button');
+        clearBtn.className = 'clear-history-btn';
+        clearBtn.innerText = 'Clear';
+        clearBtn.onclick = () => {
+            localStorage.removeItem('harmoJamHistory');
+            renderHistory();
+        };
+        historyContainer.appendChild(clearBtn);
+    }
+
+    // Favori ID'lerini Senkronize Et
+    function refreshFavoriteIds() {
+        fetch(`${API_URL}/favorites/all`)
+            .then(res => res.json())
+            .then(data => {
+                favoriteSongIds.clear();
+                data.forEach(song => favoriteSongIds.add(song.id));
+                updateSearchButtons();
+            })
+            .catch(err => console.error("Sync Error:", err));
+    }
+
+    // Favori Ekle/Çıkar
     function toggleFavorite(id, fromFavoritesPage) {
         let sarki = lastSearchResults.find(s => s.id === id);
         const isAlreadyFav = favoriteSongIds.has(id);
@@ -463,6 +521,7 @@
     }
 
     function updateSearchButtons() {
+        if(!lastSearchResults) return;
         lastSearchResults.forEach(sarki => {
             const btn = document.getElementById(`fav-btn-search-${sarki.id}`);
             if (btn) {
@@ -484,11 +543,9 @@
             .then(data => {
                 favoriteSongIds.clear();
                 data.forEach(s => favoriteSongIds.add(s.id));
-
                 if(data.length === 0) {
                     favoritesArea.innerHTML = '<div class="result-placeholder">Your collection is empty.</div>';
                 } else {
-                    // --- DÜZELTME: LİSTEYİ TERS ÇEVİR (EN SON EKLENEN EN BAŞA) ---
                     data.reverse();
                     renderCards(data, 'favorites');
                 }
@@ -509,7 +566,7 @@
         }
     }
 
-    // --- SAYFA GEÇİŞLERİ ---
+    // Sayfa Geçişleri
     const searchView = document.getElementById('search-view');
     const favoritesView = document.getElementById('favorites-view');
     const btnSearch = document.getElementById('btn-search');
@@ -531,6 +588,7 @@
         getFavorites();
     }
 
+    // Event Listeners
     searchBtn.addEventListener('click', performSearch);
     searchInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') performSearch(); });
 

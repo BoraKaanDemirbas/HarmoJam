@@ -34,15 +34,14 @@ public class SpotifyService {
 
         List<Song> sarkiListesi = new ArrayList<>();
         try {
-            String Query = URLEncoder.encode(query, StandardCharsets.UTF_8);
-            String url = SEARCH_URL + "?q=" + Query + "&type=track&limit=12&market=TR";//url yapacağımız sorgu ve istediğimiz değişkenle birleştirme
+            String url = SEARCH_URL + "?q=" + query + "&type=track&limit=12&market=TR";//url yapacağımız sorgu ve istediğimiz değişkenle birleştirme
 
             //HTTP header işlemi. göndereceğimiz zarfı hazırlama
             HttpHeaders headers = new HttpHeaders();
             headers.add("Authorization", "Bearer " + token);
             HttpEntity<String> entity = new HttpEntity<>(headers);
 
-            ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.GET, entity, String.class);//header zarfı paketleyip sunucuya gönderme işlemi
+            ResponseEntity<String> response = restTemplate.exchange(url,HttpMethod.GET,entity,String.class,query);//header zarfı paketleyip sunucuya gönderme işlemi
             JsonNode items = mapper.readTree(response.getBody()).path("tracks").path("items");//gelen cevabı dönüştüryoruz istediğimiz şeyleri alıyoruz Ayıklama
 
             for (JsonNode item : items){//istediğimiz veriler
