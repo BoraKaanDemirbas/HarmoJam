@@ -41,6 +41,7 @@ import com.example.demo.Model.Song;
 import com.example.demo.Repository.SongRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -67,6 +68,7 @@ public class FavoriteController {
     }
 
     @DeleteMapping("/delete/{id}")
+    @Transactional
     public void deleteFavorite(@PathVariable String id, @RequestHeader("X-Device-Id") String deviceId) {
         songRepository.deleteByIdAndDeviceId(id, deviceId);
     }
