@@ -314,7 +314,8 @@ function getDeviceId() {
 }
     // --- GLOBAL AYARLAR ---
     // Eğer localde çalışıyorsan burayı "http://localhost:9090" yap.
-    const API_URL = "http://localhost:9090";
+<!--    const API_URL = "http://localhost:9090";-->
+    const API_URL = window.location.origin;
 
     let lastSearchResults = [];
     let currentAudio = null;
