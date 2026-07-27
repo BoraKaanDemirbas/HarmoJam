@@ -302,6 +302,16 @@
 </div>
 
 <script>
+    // Her tarayıcı için sabit, rastgele bir kimlik oluştur/oku.
+// Bu sayede herkesin favorileri kendi tarayıcısında ayrı tutulur.
+function getDeviceId() {
+    let deviceId = localStorage.getItem('harmoJamDeviceId');
+    if (!deviceId) {
+        deviceId = crypto.randomUUID();
+        localStorage.setItem('harmoJamDeviceId', deviceId);
+    }
+    return deviceId;
+}
     // --- GLOBAL AYARLAR ---
     // Eğer localde çalışıyorsan burayı "http://localhost:9090" yap.
     const API_URL = "http://localhost:9090";
@@ -518,8 +528,21 @@
     }
 
     // Favori ID'lerini Senkronize Et
+<!--    function refreshFavoriteIds() {-->
+<!--        fetch(`${API_URL}/favorites/all`)-->
+<!--            .then(res => res.json())-->
+<!--            .then(data => {-->
+<!--                favoriteSongIds.clear();-->
+<!--                data.forEach(song => favoriteSongIds.add(song.id));-->
+<!--                updateSearchButtons();-->
+<!--            })-->
+<!--            .catch(err => console.error("Sync Error:", err));-->
+<!--    }-->
+
     function refreshFavoriteIds() {
-        fetch(`${API_URL}/favorites/all`)
+        fetch(`${API_URL}/favorites/all`, {
+            headers: { 'X-Device-Id': getDeviceId() }
+        })
             .then(res => res.json())
             .then(data => {
                 favoriteSongIds.clear();
@@ -529,14 +552,47 @@
             .catch(err => console.error("Sync Error:", err));
     }
 
-    // Favori Ekle/Çıkar
+<!--    // Favori Ekle/Çıkar-->
+<!--    function toggleFavorite(id, fromFavoritesPage) {-->
+<!--        let sarki = lastSearchResults.find(s => s.id === id);-->
+<!--        const isAlreadyFav = favoriteSongIds.has(id);-->
+
+<!--        if (isAlreadyFav) {-->
+<!--            if(fromFavoritesPage && !confirm("Remove this song?")) return;-->
+<!--            fetch(`${API_URL}/favorites/delete/${id}`, { method: 'DELETE' })-->
+<!--                .then(res => {-->
+<!--                    if(res.ok) {-->
+<!--                        favoriteSongIds.delete(id);-->
+<!--                        if(fromFavoritesPage) getFavorites();-->
+<!--                        updateSearchButtons();-->
+<!--                    }-->
+<!--                });-->
+<!--        } else {-->
+<!--            if (!sarki) return;-->
+<!--            fetch(`${API_URL}/favorites/add`, {-->
+<!--                method: 'POST',-->
+<!--                headers: { 'Content-Type': 'application/json' },-->
+<!--                body: JSON.stringify(sarki)-->
+<!--            })-->
+<!--            .then(res => {-->
+<!--                if(res.ok) {-->
+<!--                    favoriteSongIds.add(id);-->
+<!--                    updateSearchButtons();-->
+<!--                }-->
+<!--            });-->
+<!--        }-->
+<!--    }-->
+
     function toggleFavorite(id, fromFavoritesPage) {
         let sarki = lastSearchResults.find(s => s.id === id);
         const isAlreadyFav = favoriteSongIds.has(id);
 
         if (isAlreadyFav) {
             if(fromFavoritesPage && !confirm("Remove this song?")) return;
-            fetch(`${API_URL}/favorites/delete/${id}`, { method: 'DELETE' })
+            fetch(`${API_URL}/favorites/delete/${id}`, {
+                method: 'DELETE',
+                headers: { 'X-Device-Id': getDeviceId() }
+            })
                 .then(res => {
                     if(res.ok) {
                         favoriteSongIds.delete(id);
@@ -548,7 +604,10 @@
             if (!sarki) return;
             fetch(`${API_URL}/favorites/add`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Device-Id': getDeviceId()
+                },
                 body: JSON.stringify(sarki)
             })
             .then(res => {
@@ -576,9 +635,27 @@
         });
     }
 
+<!--    function getFavorites() {-->
+<!--        favoritesArea.innerHTML = '<div class="result-placeholder">Loading...</div>';-->
+<!--        fetch(`${API_URL}/favorites/all`)-->
+<!--            .then(res => res.json())-->
+<!--            .then(data => {-->
+<!--                favoriteSongIds.clear();-->
+<!--                data.forEach(s => favoriteSongIds.add(s.id));-->
+<!--                if(data.length === 0) {-->
+<!--                    favoritesArea.innerHTML = '<div class="result-placeholder">Your collection is empty.</div>';-->
+<!--                } else {-->
+<!--                    data.reverse();-->
+<!--                    renderCards(data, 'favorites');-->
+<!--                }-->
+<!--            });-->
+<!--    }-->
+
     function getFavorites() {
         favoritesArea.innerHTML = '<div class="result-placeholder">Loading...</div>';
-        fetch(`${API_URL}/favorites/all`)
+        fetch(`${API_URL}/favorites/all`, {
+            headers: { 'X-Device-Id': getDeviceId() }
+        })
             .then(res => res.json())
             .then(data => {
                 favoriteSongIds.clear();
