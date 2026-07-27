@@ -1,6 +1,8 @@
 package com.example.demo.Controller;
 
+import com.example.demo.Model.SearchLog;
 import com.example.demo.Model.Song;
+import com.example.demo.Repository.SearchLogRepository;
 import com.example.demo.Service.MusicManagerService;
 import org.springframework.web.bind.annotation.*;
 
@@ -8,11 +10,18 @@ import org.springframework.beans.factory.annotation.Autowired;//
 
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @RestController
 @CrossOrigin(origins = "*")
 public class Controller {
+
+    @Autowired
+    private com.example.demo.Repository.MixLogRepository mixLogRepository;
+
+    @Autowired
+    private SearchLogRepository searchLogRepository;
 
     @Autowired
     private MusicManagerService musicManager;
@@ -42,6 +51,9 @@ public class Controller {
     @PostMapping("/search")
     public List<Song> searchMusic(@RequestBody String query) {
 
+        SearchLog log = new SearchLog(query, LocalDateTime.now());
+        searchLogRepository.save(log);
+
         System.out.println("Gelen Arama: " + query);
 
         return musicManager.searchSong(query);
@@ -56,6 +68,9 @@ public class Controller {
     @GetMapping("/recommend")
     public List<Song> recommend(@RequestParam String track, @RequestParam String artist) {
         System.out.println("CONTROLLER: Öneri isteği geldi -> " + track);
+
+        com.example.demo.Model.MixLog mixLog = new com.example.demo.Model.MixLog(track, artist, java.time.LocalDateTime.now());
+        mixLogRepository.save(mixLog);
 
         return musicManager.getRecommendation(track, artist);
     }
