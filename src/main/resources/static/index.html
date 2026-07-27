@@ -122,6 +122,45 @@
         .search-btn:hover { transform: scale(1.05); filter: brightness(1.1); }
         .search-btn svg { width: 22px; height: 22px; fill: #2a0a4a; }
 
+<!--                /* Butona .loading class'ı eklendiğinde içindeki metni/ikonu gizle */-->
+                #searchBtn.loading {
+            pointer-events: none; /* Arama sırasında üst üste tıklamayı engeller */
+            position: relative; /* Spinner'ı ortalamak için gerekli */
+        }
+
+            #searchBtn.loading svg {
+                opacity: 0; /* Büyüteç ikonunu gizle */
+            }
+            #searchBtn.loading::after {
+        content: "";
+        position: absolute;
+        width: 22px;
+        height: 22px;
+        top: 50%;
+        left: 50%;
+        margin-top: -11px;
+        margin-left: -11px;
+        border-radius: 50%;
+        background: conic-gradient(
+            from 0deg,
+            transparent 0%,
+            rgba(255, 255, 255, 0.15) 20%,
+            #fff5e6 45%,
+            #ffb347 70%,
+            #ff6cab 90%,
+            transparent 100%
+        );
+        -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 3px));
+        mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 3px));
+        animation: spin 0.8s linear infinite;
+    }
+
+        /* Dönüş (Spin) animasyonunun kuralı */
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
         /* --- SEARCH HISTORY CHIPS --- */
         .history-container {
             display: flex;
@@ -230,7 +269,7 @@
 <div class="noise"></div>
 
 <div class="content-wrapper">
-    <h1>HarmoJam</h1>
+    <h1 style="cursor: pointer;" onclick="resetToHome()">HarmoJam</h1>
 
     <div class="nav-menu">
         <button onclick="showSearch()" class="nav-btn active" id="btn-search">Search</button>
@@ -313,6 +352,7 @@
                 'Content-Type': 'text/plain; charset=UTF-8' // UTF-8 olduğunu bağırıyoruz
             }
         })
+
             .then(response => response.json())
             .then(data => {
                 lastSearchResults = data;
@@ -591,6 +631,16 @@
     // Event Listeners
     searchBtn.addEventListener('click', performSearch);
     searchInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') performSearch(); });
+
+    function resetToHome() {
+    // 1. Arama çubuğunun içini boşalt
+    document.getElementById('search-view').value = '';
+
+    // 2. Şarkı sonuçlarının listelendiği alanı temizle
+    document.getElementById('favorites-view').innerHTML = '';
+
+    // 3. (Opsiyonel) Eğer "Results for 'aşk'" yazısını da gizlemek istersen onu da temizle
+}
 
 </script>
 </body>
