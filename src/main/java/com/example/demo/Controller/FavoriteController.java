@@ -1,76 +1,66 @@
-//package com.example.demo.Controller;
-//
-//import com.example.demo.Model.Song;
-//import com.example.demo.Repository.SongRepository;
-//import org.springframework.beans.factory.annotation.Autowired;
-//import org.springframework.web.bind.annotation.*;
-//
-//import java.util.List;
-//
-//@RestController
-//@RequestMapping("/favorites")
-//@CrossOrigin(origins = "*")
-//public class FavoriteController {
-//    @Autowired
-//    private SongRepository songRepository;
-//
-//    @PostMapping("/add")
-//    public Song addFavorite(@RequestBody Song song) {// Gelen şarkıyı veritabanına kaydetme
-//        if (song.getId() == null || song.getId().isEmpty()) {
-//            song.setId(java.util.UUID.randomUUID().toString());
-//        }
-//        System.out.println("Kaydedilen Şarkı: " + song.getIsim());
-//        return songRepository.save(song);
-//    }
-//
-//    @GetMapping("/all")
-//    public List<Song> getAllFavorites() {// Veritabanındaki her şeyi getir
-//        return songRepository.findAll();
-//    }
-//
-//    @DeleteMapping("/delete/{id}")
-//    public void deleteFavorite(@PathVariable String id) {// ID'si verilen şarkıyı sil
-//        songRepository.deleteById(id);
-//    }
-//
-//}
-
 package com.example.demo.Controller;
 
 import com.example.demo.Model.Song;
 import com.example.demo.Repository.SongRepository;
+import com.example.demo.Service.OwnerResolverService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/favorites")
 @CrossOrigin(origins = "*", allowedHeaders = "*")
 public class FavoriteController {
+
     @Autowired
     private SongRepository songRepository;
 
+    @Autowired
+    private OwnerResolverService ownerResolver;
+
     @PostMapping("/add")
-    public Song addFavorite(@RequestBody Song song, @RequestHeader("X-Device-Id") String deviceId) {
-        if (song.getId() == null || song.getId().isEmpty()) {
-            song.setId(java.util.UUID.randomUUID().toString());
+    public ResponseEntity<?> addFavorite(@RequestBody Song song,
+                                          @RequestHeader(value = "Authorization", required = false) String authHeader,
+                                          @RequestHeader(value = "X-Device-Id", required = false) String deviceId) {
+        try {
+            String ownerId = ownerResolver.resolve(authHeader, deviceId);
+
+            if (song.getId() == null || song.getId().isEmpty()) {
+                song.setId(java.util.UUID.randomUUID().toString());
+            }
+            song.setOwnerId(ownerId);
+            System.out.println("Kaydedilen Şarkı: " + song.getIsim() + " (owner: " + ownerId + ")");
+            return ResponseEntity.ok(songRepository.save(song));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(401).body(Map.of("error", e.getMessage()));
         }
-        song.setDeviceId(deviceId);
-        System.out.println("Kaydedilen Şarkı: " + song.getIsim() + " (device: " + deviceId + ")");
-        return songRepository.save(song);
     }
 
     @GetMapping("/all")
-    public List<Song> getAllFavorites(@RequestHeader("X-Device-Id") String deviceId) {
-        return songRepository.findByDeviceId(deviceId);
+    public ResponseEntity<?> getAllFavorites(@RequestHeader(value = "Authorization", required = false) String authHeader,
+                                              @RequestHeader(value = "X-Device-Id", required = false) String deviceId) {
+        try {
+            String ownerId = ownerResolver.resolve(authHeader, deviceId);
+            return ResponseEntity.ok(songRepository.findByOwnerId(ownerId));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(401).body(Map.of("error", e.getMessage()));
+        }
     }
 
     @DeleteMapping("/delete/{id}")
     @Transactional
-    public void deleteFavorite(@PathVariable String id, @RequestHeader("X-Device-Id") String deviceId) {
-        songRepository.deleteByIdAndDeviceId(id, deviceId);
+    public ResponseEntity<?> deleteFavorite(@PathVariable String id,
+                                             @RequestHeader(value = "Authorization", required = false) String authHeader,
+                                             @RequestHeader(value = "X-Device-Id", required = false) String deviceId) {
+        try {
+            String ownerId = ownerResolver.resolve(authHeader, deviceId);
+            songRepository.deleteByIdAndOwnerId(id, ownerId);
+            return ResponseEntity.ok().build();
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(401).body(Map.of("error", e.getMessage()));
+        }
     }
-
 }

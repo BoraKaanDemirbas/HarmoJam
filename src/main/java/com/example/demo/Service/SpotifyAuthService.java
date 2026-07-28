@@ -1,5 +1,6 @@
 package com.example.demo.Service;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -22,7 +23,17 @@ public class SpotifyAuthService {
 
     private final String SPOTIFY_TOKEN_URL = "https://accounts.spotify.com/api/token";//spoti api urlsi
 
-    public String getAccessToken() {//token alma
+    // Token'ı ve son geçerlilik zamanını hafızada tutuyoruz, her aramada
+    // Spotify'a yeniden istek atmamak için (token normalde ~1 saat geçerli).
+    private String cachedToken;
+    private long tokenExpiryEpochMillis = 0;
+
+    public synchronized String getAccessToken() {//token alma
+        // Elimizdeki token hâlâ geçerliyse (30 saniyelik güvenlik payı ile) onu döndür
+        if (cachedToken != null && System.currentTimeMillis() < tokenExpiryEpochMillis - 30_000) {
+            return cachedToken;
+        }
+
         try {
             RestTemplate restTemplate = new RestTemplate();
             String authString = CLIENT_ID + ":" + CLIENT_SECRET;//id ile secret birleştirme çünkü spoti api öyle istiyor
@@ -43,18 +54,17 @@ public class SpotifyAuthService {
             //Terminal kontrol
             System.out.println("AUTH SERVİS: Spotify'dan cevap geldi: " + response.getStatusCode());
 
-
             // gelen JSON cevabı istediğimiz hale getiriyoruz
-            String temizToken = new ObjectMapper().readTree(response.getBody()).path("access_token").asText();
+            JsonNode root = new ObjectMapper().readTree(response.getBody());
+            String temizToken = root.path("access_token").asText();
+            int expiresInSeconds = root.path("expires_in").asInt(3600); // Spotify vermezse 1 saat varsay
 
-            /*
-            //ObjectMapper mapper = new ObjectMapper();
-            //JsonNode tokenNode = mapper.readTree(response.getBody()).path("access_token");
-            //String temizToken = tokenNode.asText();*/
+            cachedToken = temizToken;
+            tokenExpiryEpochMillis = System.currentTimeMillis() + (expiresInSeconds * 1000L);
 
             //Terminal Kontrol
-            System.out.println("AUTH SERVİS: Temiz Token oluşturuldu: " + temizToken.substring(0, 12) + "...");
-            return temizToken;
+            System.out.println("AUTH SERVİS: Yeni token alındı (" + expiresInSeconds + " sn geçerli): " + temizToken.substring(0, 12) + "...");
+            return cachedToken;
 
         } catch (Exception e) {//hata kontrol
             System.out.println("TOKEN ALMA HATASI: " + e.getMessage());//terminal kontrol

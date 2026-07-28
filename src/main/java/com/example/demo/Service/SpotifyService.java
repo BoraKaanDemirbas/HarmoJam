@@ -34,7 +34,8 @@ public class SpotifyService {
 
         List<Song> sarkiListesi = new ArrayList<>();
         try {
-            String url = SEARCH_URL + "?q=" + query + "&type=track&limit=12&market=TR";//url yapacağımız sorgu ve istediğimiz değişkenle birleştirme
+            String encodedQuery = URLEncoder.encode(query, StandardCharsets.UTF_8);
+            String url = SEARCH_URL + "?q=" + encodedQuery + "&type=track&limit=12&market=TR";//url yapacağımız sorgu ve istediğimiz değişkenle birleştirme
 
             //HTTP header işlemi. göndereceğimiz zarfı hazırlama
             HttpHeaders headers = new HttpHeaders();

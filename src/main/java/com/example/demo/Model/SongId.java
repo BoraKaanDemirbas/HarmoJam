@@ -6,14 +6,14 @@ import java.util.Objects;
 public class SongId implements Serializable {
 
     private String id;
-    private String deviceId;
+    private String ownerId;
 
     public SongId() {
     }
 
-    public SongId(String id, String deviceId) {
+    public SongId(String id, String ownerId) {
         this.id = id;
-        this.deviceId = deviceId;
+        this.ownerId = ownerId;
     }
 
     @Override
@@ -21,11 +21,11 @@ public class SongId implements Serializable {
         if (this == o) return true;
         if (!(o instanceof SongId)) return false;
         SongId songId = (SongId) o;
-        return Objects.equals(id, songId.id) && Objects.equals(deviceId, songId.deviceId);
+        return Objects.equals(id, songId.id) && Objects.equals(ownerId, songId.ownerId);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, deviceId);
+        return Objects.hash(id, ownerId);
     }
 }

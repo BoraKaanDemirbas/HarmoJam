@@ -274,6 +274,7 @@
     <div class="nav-menu">
         <button onclick="showSearch()" class="nav-btn active" id="btn-search">Search</button>
         <button onclick="showFavorites()" class="nav-btn" id="btn-fav">Favorites</button>
+        <button onclick="showAccount()" class="nav-btn" id="btn-account">Account</button>
     </div>
 
     <div id="search-view">
@@ -299,24 +300,65 @@
             <p style="opacity: 0.5;">Loading...</p>
         </div>
     </div>
+
+    <div id="account-view" style="display:none; width:100%; flex-direction:column; align-items:center;">
+        <div id="accountLoggedOut" style="width:100%; max-width:400px; display:flex; flex-direction:column; align-items:center; gap:12px;">
+            <div class="search-box" style="max-width:400px;">
+                <input id="authUsername" type="text" placeholder="Username" autocomplete="username"/>
+            </div>
+            <div class="search-box" style="max-width:400px;">
+                <input id="authPassword" type="password" placeholder="Password" autocomplete="current-password"/>
+            </div>
+            <div style="display:flex; gap:10px; width:100%; max-width:400px;">
+                <button onclick="doLogin()" class="action-btn recommend-btn" style="flex:1; padding:12px;">Login</button>
+                <button onclick="doRegister()" class="action-btn play-btn" style="flex:1; padding:12px;">Register</button>
+            </div>
+            <p id="authError" style="color:#ff6b6b; font-size:0.9rem; min-height:1.2em;"></p>
+        </div>
+
+        <div id="accountLoggedIn" style="display:none; flex-direction:column; align-items:center; gap:16px;">
+            <p style="font-size:1.2rem;">Logged in as <strong id="accountUsername"></strong></p>
+            <button onclick="doLogout()" class="action-btn play-btn" style="padding:10px 30px;">Logout</button>
+        </div>
+    </div>
 </div>
 
 <script>
-    // Her tarayıcı için sabit, rastgele bir kimlik oluştur/oku.
-// Bu sayede herkesin favorileri kendi tarayıcısında ayrı tutulur.
-function getDeviceId() {
-    let deviceId = localStorage.getItem('harmoJamDeviceId');
-    if (!deviceId) {
-        deviceId = crypto.randomUUID();
-        localStorage.setItem('harmoJamDeviceId', deviceId);
+    // Her tarayıcı için sabit, rastgele bir kimlik oluştur/oku (misafir modu için).
+    // Bu sayede giriş yapmamış herkesin favorileri kendi tarayıcısında ayrı tutulur.
+    function getDeviceId() {
+        let deviceId = localStorage.getItem('harmoJamDeviceId');
+        if (!deviceId) {
+            deviceId = crypto.randomUUID();
+            localStorage.setItem('harmoJamDeviceId', deviceId);
+        }
+        return deviceId;
     }
-    return deviceId;
-}
-    // --- GLOBAL AYARLAR ---
-    // Eğer localde çalışıyorsan burayı "http://localhost:9090" yap.
-<!--    const API_URL = "http://localhost:9090";-->
-    const API_URL = window.location.origin;
 
+    // --- HESAP / GİRİŞ SİSTEMİ ---
+    function getAuthToken() {
+        return localStorage.getItem('harmoJamAuthToken');
+    }
+    function setAuthToken(token) {
+        localStorage.setItem('harmoJamAuthToken', token);
+    }
+    function clearAuthToken() {
+        localStorage.removeItem('harmoJamAuthToken');
+    }
+    // Favoriler ile ilgili her isteğe eklenecek header'lar.
+    // Giriş yapılmışsa Authorization önceliklidir (backend bunu X-Device-Id'ye tercih eder),
+    // yapılmamışsa misafir kimliği (X-Device-Id) kullanılır.
+    function getAuthHeaders() {
+        const headers = { 'X-Device-Id': getDeviceId() };
+        const token = getAuthToken();
+        if (token) {
+            headers['Authorization'] = 'Bearer ' + token;
+        }
+        return headers;
+    }
+
+    // --- GLOBAL AYARLAR ---
+    const API_URL = window.location.origin;
 
     let lastSearchResults = [];
     let currentAudio = null;
@@ -331,8 +373,78 @@ function getDeviceId() {
     const statusText = document.getElementById('statusText');
     const historyContainer = document.getElementById('historyContainer');
 
+    // Hesap ekranı elementleri
+    const authUsernameInput = document.getElementById('authUsername');
+    const authPasswordInput = document.getElementById('authPassword');
+    const authError = document.getElementById('authError');
+    const accountLoggedOut = document.getElementById('accountLoggedOut');
+    const accountLoggedIn = document.getElementById('accountLoggedIn');
+    const accountUsername = document.getElementById('accountUsername');
+
+    function doRegister() {
+        authError.innerText = '';
+        fetch(`${API_URL}/auth/register`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username: authUsernameInput.value.trim(), password: authPasswordInput.value })
+        })
+        .then(async res => {
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Registration failed');
+            setAuthToken(data.token);
+            onLoginSuccess(data.username);
+        })
+        .catch(err => { authError.innerText = err.message; });
+    }
+
+    function doLogin() {
+        authError.innerText = '';
+        fetch(`${API_URL}/auth/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username: authUsernameInput.value.trim(), password: authPasswordInput.value })
+        })
+        .then(async res => {
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Login failed');
+            setAuthToken(data.token);
+            onLoginSuccess(data.username);
+        })
+        .catch(err => { authError.innerText = err.message; });
+    }
+
+    function doLogout() {
+        clearAuthToken();
+        accountLoggedIn.style.display = 'none';
+        accountLoggedOut.style.display = 'flex';
+        authUsernameInput.value = '';
+        authPasswordInput.value = '';
+        refreshFavoriteIds(); // favori listesini tekrar misafir kimliğine göre tazele
+    }
+
+    function onLoginSuccess(username) {
+        accountUsername.innerText = username;
+        accountLoggedOut.style.display = 'none';
+        accountLoggedIn.style.display = 'flex';
+        refreshFavoriteIds(); // favori listesini üyenin kendi verisine göre tazele
+    }
+
+    // Sayfa yenilendiğinde localStorage'daki token hâlâ geçerli mi diye kontrol eder.
+    function checkExistingSession() {
+        const token = getAuthToken();
+        if (!token) return;
+        fetch(`${API_URL}/auth/me`, { headers: { 'Authorization': 'Bearer ' + token } })
+            .then(async res => {
+                if (!res.ok) { clearAuthToken(); return; }
+                const data = await res.json();
+                onLoginSuccess(data.username);
+            })
+            .catch(() => clearAuthToken());
+    }
+
     // Sayfa Yüklendiğinde
     window.addEventListener('load', () => {
+        checkExistingSession();
         refreshFavoriteIds();
         renderHistory();
     });
@@ -367,6 +479,14 @@ function getDeviceId() {
 
             .then(response => response.json())
             .then(data => {
+                data.forEach(song => {
+                    if (!song.id) {
+                        // Örn: "mix_BohemianRhapsody_Queen" gibi boşluksuz bir ID oluşturur
+                        let sarkiAdi = song.isim || "track";
+                        let sanatci = song.sarkici || song.artist || "artist";
+                        song.id = "mix_" + sarkiAdi.replace(/\s+/g, "") + "_" + sanatci.replace(/\s+/g, "");
+                    }
+                });
                 lastSearchResults = data;
                 renderCards(data, 'search');
 
@@ -407,6 +527,7 @@ function getDeviceId() {
         fetch(url)
             .then(response => response.json())
             .then(data => {
+                lastSearchResults = data;
                 renderCards(data, 'search');
                 // ESKİ METİN GERİ GELDİ:
                 statusText.innerText = `Mix based on "${trackName}"`;
@@ -530,20 +651,9 @@ function getDeviceId() {
     }
 
     // Favori ID'lerini Senkronize Et
-<!--    function refreshFavoriteIds() {-->
-<!--        fetch(`${API_URL}/favorites/all`)-->
-<!--            .then(res => res.json())-->
-<!--            .then(data => {-->
-<!--                favoriteSongIds.clear();-->
-<!--                data.forEach(song => favoriteSongIds.add(song.id));-->
-<!--                updateSearchButtons();-->
-<!--            })-->
-<!--            .catch(err => console.error("Sync Error:", err));-->
-<!--    }-->
-
     function refreshFavoriteIds() {
         fetch(`${API_URL}/favorites/all`, {
-            headers: { 'X-Device-Id': getDeviceId() }
+            headers: getAuthHeaders()
         })
             .then(res => res.json())
             .then(data => {
@@ -554,37 +664,6 @@ function getDeviceId() {
             .catch(err => console.error("Sync Error:", err));
     }
 
-<!--    // Favori Ekle/Çıkar-->
-<!--    function toggleFavorite(id, fromFavoritesPage) {-->
-<!--        let sarki = lastSearchResults.find(s => s.id === id);-->
-<!--        const isAlreadyFav = favoriteSongIds.has(id);-->
-
-<!--        if (isAlreadyFav) {-->
-<!--            if(fromFavoritesPage && !confirm("Remove this song?")) return;-->
-<!--            fetch(`${API_URL}/favorites/delete/${id}`, { method: 'DELETE' })-->
-<!--                .then(res => {-->
-<!--                    if(res.ok) {-->
-<!--                        favoriteSongIds.delete(id);-->
-<!--                        if(fromFavoritesPage) getFavorites();-->
-<!--                        updateSearchButtons();-->
-<!--                    }-->
-<!--                });-->
-<!--        } else {-->
-<!--            if (!sarki) return;-->
-<!--            fetch(`${API_URL}/favorites/add`, {-->
-<!--                method: 'POST',-->
-<!--                headers: { 'Content-Type': 'application/json' },-->
-<!--                body: JSON.stringify(sarki)-->
-<!--            })-->
-<!--            .then(res => {-->
-<!--                if(res.ok) {-->
-<!--                    favoriteSongIds.add(id);-->
-<!--                    updateSearchButtons();-->
-<!--                }-->
-<!--            });-->
-<!--        }-->
-<!--    }-->
-
     function toggleFavorite(id, fromFavoritesPage) {
         let sarki = lastSearchResults.find(s => s.id === id);
         const isAlreadyFav = favoriteSongIds.has(id);
@@ -593,7 +672,7 @@ function getDeviceId() {
             if(fromFavoritesPage && !confirm("Remove this song?")) return;
             fetch(`${API_URL}/favorites/delete/${id}`, {
                 method: 'DELETE',
-                headers: { 'X-Device-Id': getDeviceId() }
+                headers: getAuthHeaders()
             })
                 .then(res => {
                     if(res.ok) {
@@ -608,7 +687,7 @@ function getDeviceId() {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-Device-Id': getDeviceId()
+                    ...getAuthHeaders()
                 },
                 body: JSON.stringify(sarki)
             })
@@ -637,26 +716,11 @@ function getDeviceId() {
         });
     }
 
-<!--    function getFavorites() {-->
-<!--        favoritesArea.innerHTML = '<div class="result-placeholder">Loading...</div>';-->
-<!--        fetch(`${API_URL}/favorites/all`)-->
-<!--            .then(res => res.json())-->
-<!--            .then(data => {-->
-<!--                favoriteSongIds.clear();-->
-<!--                data.forEach(s => favoriteSongIds.add(s.id));-->
-<!--                if(data.length === 0) {-->
-<!--                    favoritesArea.innerHTML = '<div class="result-placeholder">Your collection is empty.</div>';-->
-<!--                } else {-->
-<!--                    data.reverse();-->
-<!--                    renderCards(data, 'favorites');-->
-<!--                }-->
-<!--            });-->
-<!--    }-->
 
     function getFavorites() {
         favoritesArea.innerHTML = '<div class="result-placeholder">Loading...</div>';
         fetch(`${API_URL}/favorites/all`, {
-            headers: { 'X-Device-Id': getDeviceId() }
+            headers: getAuthHeaders()
         })
             .then(res => res.json())
             .then(data => {
@@ -688,23 +752,38 @@ function getDeviceId() {
     // Sayfa Geçişleri
     const searchView = document.getElementById('search-view');
     const favoritesView = document.getElementById('favorites-view');
+    const accountView = document.getElementById('account-view');
     const btnSearch = document.getElementById('btn-search');
     const btnFav = document.getElementById('btn-fav');
+    const btnAccount = document.getElementById('btn-account');
 
     function showSearch() {
         searchView.style.display = 'flex';
         favoritesView.style.display = 'none';
+        accountView.style.display = 'none';
         btnSearch.classList.add('active');
         btnFav.classList.remove('active');
+        btnAccount.classList.remove('active');
         updateSearchButtons();
     }
 
     function showFavorites() {
         searchView.style.display = 'none';
         favoritesView.style.display = 'flex';
+        accountView.style.display = 'none';
         btnFav.classList.add('active');
         btnSearch.classList.remove('active');
+        btnAccount.classList.remove('active');
         getFavorites();
+    }
+
+    function showAccount() {
+        searchView.style.display = 'none';
+        favoritesView.style.display = 'none';
+        accountView.style.display = 'flex';
+        btnAccount.classList.add('active');
+        btnSearch.classList.remove('active');
+        btnFav.classList.remove('active');
     }
 
     // Event Listeners
