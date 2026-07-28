@@ -32,6 +32,9 @@ public class FavoriteController {
                 song.setId(java.util.UUID.randomUUID().toString());
             }
             song.setOwnerId(ownerId);
+
+            song.setAddedAt(java.time.LocalDateTime.now());//
+
             System.out.println("Kaydedilen Şarkı: " + song.getIsim() + " (owner: " + ownerId + ")");
             return ResponseEntity.ok(songRepository.save(song));
         } catch (IllegalArgumentException e) {
@@ -44,7 +47,7 @@ public class FavoriteController {
                                               @RequestHeader(value = "X-Device-Id", required = false) String deviceId) {
         try {
             String ownerId = ownerResolver.resolve(authHeader, deviceId);
-            return ResponseEntity.ok(songRepository.findByOwnerId(ownerId));
+            return ResponseEntity.ok(songRepository.findByOwnerIdOrderByAddedAtDesc(ownerId));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(401).body(Map.of("error", e.getMessage()));
         }
@@ -57,7 +60,7 @@ public class FavoriteController {
                                              @RequestHeader(value = "X-Device-Id", required = false) String deviceId) {
         try {
             String ownerId = ownerResolver.resolve(authHeader, deviceId);
-            songRepository.deleteByIdAndOwnerId(id, ownerId);
+            songRepository.deleteByIdAndOwnerIdOrderByAddedAtDesc(id, ownerId);
             return ResponseEntity.ok().build();
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(401).body(Map.of("error", e.getMessage()));

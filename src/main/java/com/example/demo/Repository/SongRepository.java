@@ -12,5 +12,7 @@ public interface SongRepository extends JpaRepository<Song, SongId>{
 
     List<Song> findByOwnerId(String ownerId);
 
-    void deleteByIdAndOwnerId(String id, String ownerId);
+    List<Song> findByOwnerIdOrderByAddedAtDesc(String ownerId);
+
+    void deleteByIdAndOwnerIdOrderByAddedAtDesc(String id, String ownerId);
 }

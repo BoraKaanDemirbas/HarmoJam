@@ -7,6 +7,8 @@ import jakarta.persistence.*;
 @IdClass(SongId.class)
 public class Song {//değişkenler
 
+    private java.time.LocalDateTime addedAt;
+
     @Id
     @Column(length = 600)
     private String id;
@@ -56,5 +58,8 @@ public class Song {//değişkenler
 
     public String getMuzikUrl() { return muzikUrl; }
     public void setMuzikUrl(String muzikUrl) { this.muzikUrl = muzikUrl; }
+
+    public java.time.LocalDateTime getAddedAt() { return addedAt;}
+    public void setAddedAt(java.time.LocalDateTime addedAt) {this.addedAt = addedAt;}
 
 }
