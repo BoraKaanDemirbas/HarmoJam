@@ -481,7 +481,7 @@
             .then(data => {
                 data.forEach(song => {
                     if (!song.id) {
-                        // Örn: "mix_BohemianRhapsody_Queen" gibi boşluksuz bir ID oluşturur
+                        // boşluksuz bir ID oluşturur
                         let sarkiAdi = song.isim || "track";
                         let sanatci = song.sarkici || song.artist || "artist";
                         song.id = "mix_" + sarkiAdi.replace(/\s+/g, "") + "_" + sanatci.replace(/\s+/g, "");

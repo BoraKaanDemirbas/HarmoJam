@@ -6,8 +6,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.util.UriComponentsBuilder;
 
-import java.net.URLEncoder;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
@@ -26,13 +27,21 @@ public class LastFmService {
         try {
             System.out.println("LAST.FM: Benzerler soruluyor -> " + parcaIsmi);//kontrol
 
-            String encodedParca = URLEncoder.encode(parcaIsmi, StandardCharsets.UTF_8);//sorguda boşluklar hata çıkarmasın diye encode
-            String encodedSarkici = URLEncoder.encode(sarkiciISmi, StandardCharsets.UTF_8);
+            // Not: elle URLEncoder.encode() KULLANMIYORUZ; RestTemplate'e String url verince
+            // ikinci kez encode ediyordu, bu da Türkçe karakterleri bozuyordu.
+            // UriComponentsBuilder.encode() ile tek seferde doğru encode edip URI olarak veriyoruz.
+            URI lastFmUri = UriComponentsBuilder.fromHttpUrl("http://ws.audioscrobbler.com/2.0/")
+                    .queryParam("method", "track.getsimilar")
+                    .queryParam("artist", sarkiciISmi)
+                    .queryParam("track", parcaIsmi)
+                    .queryParam("api_key", LASTFM_API_KEY)
+                    .queryParam("format", "json")
+                    .queryParam("limit", 12)
+                    .build()
+                    .encode(StandardCharsets.UTF_8)
+                    .toUri();
 
-            //gerekli urlyi hazırlama
-            String lastFmUrl = "http://ws.audioscrobbler.com/2.0/?method=track.getsimilar&artist=" + encodedSarkici + "&track=" + encodedParca + "&api_key=" + LASTFM_API_KEY + "&format=json&limit=12";
-
-            String lastFmResponse = restTemplate.getForObject(lastFmUrl, String.class);//gelen cevap
+            String lastFmResponse = restTemplate.getForObject(lastFmUri, String.class);//gelen cevap
             JsonNode similarTracks = new ObjectMapper().readTree(lastFmResponse).path("similartracks").path("track");//cevabı dönüştürme istediklerimizi alma paketi açma
 
             if (similarTracks.isEmpty()) {

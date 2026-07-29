@@ -10,8 +10,9 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.util.UriComponentsBuilder;
 
-import java.net.URLEncoder;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
@@ -34,15 +35,25 @@ public class SpotifyService {
 
         List<Song> sarkiListesi = new ArrayList<>();
         try {
-            String encodedQuery = URLEncoder.encode(query, StandardCharsets.UTF_8);
-            String url = SEARCH_URL + "?q=" + encodedQuery + "&type=track&limit=12&market=TR";//url yapacağımız sorgu ve istediğimiz değişkenle birleştirme
+            // Not: query'i burada elle URLEncoder ile encode ETMİYORUZ.
+            // UriComponentsBuilder.encode() zaten tek seferde doğru şekilde encode ediyor;
+            // elle + burada ikinci kez encode edersek "double encoding" olur ve
+            // Türkçe karakterler (ç, ş, ğ, ü, ö, ı) bozuluyordu.
+            URI uri = UriComponentsBuilder.fromHttpUrl(SEARCH_URL)
+                    .queryParam("q", query)
+                    .queryParam("type", "track")
+                    .queryParam("limit", 12)
+                    .queryParam("market", "TR")
+                    .build()
+                    .encode(StandardCharsets.UTF_8)
+                    .toUri();
 
             //HTTP header işlemi. göndereceğimiz zarfı hazırlama
             HttpHeaders headers = new HttpHeaders();
             headers.add("Authorization", "Bearer " + token);
             HttpEntity<String> entity = new HttpEntity<>(headers);
 
-            ResponseEntity<String> response = restTemplate.exchange(url,HttpMethod.GET,entity,String.class,query);//header zarfı paketleyip sunucuya gönderme işlemi
+            ResponseEntity<String> response = restTemplate.exchange(uri, HttpMethod.GET, entity, String.class);//header zarfı paketleyip sunucuya gönderme işlemi
             JsonNode items = mapper.readTree(response.getBody()).path("tracks").path("items");//gelen cevabı dönüştüryoruz istediğimiz şeyleri alıyoruz Ayıklama
 
             for (JsonNode item : items){//istediğimiz veriler

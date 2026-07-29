@@ -6,6 +6,10 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.stream.Collectors;
 
 @Service
 public class MusicManagerService {
@@ -18,6 +22,11 @@ public class MusicManagerService {
     @Autowired
     private DeezerService deezerService;
 
+    // Deezer eşleştirmelerini (audio preview bulma) paralel yapmak için havuz.
+    // Önceden her şarkı için sırayla (birbiri ardına) Deezer'a istek atılıyordu,
+    // bu da 10+ şarkı için toplamda saniyelerce sürüyordu. Artık hepsi aynı anda gidiyor.
+    private final ExecutorService deezerExecutor = Executors.newFixedThreadPool(10);
+
 
     //arama metodu
     public List<Song> searchSong(String query) {
@@ -25,38 +34,47 @@ public class MusicManagerService {
         System.out.println("MANAGER: Spotify araması yapılıyor -> " + query);//terminal Kontrol
 
         List<Song> spotifySongs = spotifyService.searchSong(query);
-        for (Song s : spotifySongs) {
-            try {
-                Song deezerMatch = deezerService.findTrack(s.getIsim(), s.getSarkici());
 
-                if (deezerMatch != null && deezerMatch.getMuzikUrl() != null) {
-                    s.setMuzikUrl(deezerMatch.getMuzikUrl());
-                }
-            } catch (Exception e) {
-                System.out.println("Audio eşleştirme hatası: " + e.getMessage());//terminal Kontrol
-            }
-        }
+        // Her şarkı için Deezer eşleştirmesini paralel olarak başlatıyoruz
+        List<CompletableFuture<Void>> futures = spotifySongs.stream()
+                .map(s -> CompletableFuture.runAsync(() -> {
+                    try {
+                        Song deezerMatch = deezerService.findTrack(s.getIsim(), s.getSarkici());
+
+                        if (deezerMatch != null && deezerMatch.getMuzikUrl() != null) {
+                            s.setMuzikUrl(deezerMatch.getMuzikUrl());
+                        }
+                    } catch (Exception e) {
+                        System.out.println("Audio eşleştirme hatası: " + e.getMessage());//terminal Kontrol
+                    }
+                }, deezerExecutor))
+                .collect(Collectors.toList());
+
+        // Hepsinin bitmesini bekliyoruz (ama artık paralel çalıştıkları için toplam süre
+        // en yavaş tekil istek kadar sürüyor, hepsinin toplamı kadar değil)
+        futures.forEach(CompletableFuture::join);
 
         return spotifySongs;
     }
 
     public List<Song> getRecommendation(String trackName, String artistName) {
-        List<Song> finalRecommendations = new ArrayList<>();
-
         List<String[]> similarTracks = lastFmService.getRecommendation(trackName, artistName);
 
-        int limit = 0;
-        for (String[] trackInfo : similarTracks) {
-            if (limit >= 12) break;
+        List<String[]> limited = similarTracks.stream()
+                .limit(12)
+                .collect(Collectors.toList());
 
-            String name = trackInfo[0];
-            String artist = trackInfo[1];
+        // Last.fm'den gelen benzer şarkılar için Deezer eşleştirmesini paralel yapıyoruz
+        List<CompletableFuture<Song>> futures = limited.stream()
+                .map(trackInfo -> CompletableFuture.supplyAsync(
+                        () -> deezerService.findTrack(trackInfo[0], trackInfo[1]), deezerExecutor))
+                .collect(Collectors.toList());
 
-            Song song = deezerService.findTrack(name, artist);
-
+        List<Song> finalRecommendations = new ArrayList<>();
+        for (CompletableFuture<Song> future : futures) {
+            Song song = future.join();
             if (song != null) {
                 finalRecommendations.add(song);
-                limit++;
             }
         }
 
