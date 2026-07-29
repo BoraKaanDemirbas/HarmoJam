@@ -562,7 +562,7 @@
             let playBtnHtml = `<button class="action-btn play-btn" disabled style="opacity:0.5">No Audio</button>`;
             if (sarki.muzikUrl && sarki.muzikUrl !== "null") {
                 const safeUrl = sarki.muzikUrl.replace(/'/g, "\\'");
-                playBtnHtml = `<button class="action-btn play-btn" onclick="togglePlay(this, '${safeUrl}')">▶ Play</button>`;
+                playBtnHtml = `<button class="action-btn play-btn" onclick="togglePlay(this, '${safeUrl}', '${sarki.id}', '${safeName}', '${safeArtist}')">▶ Play</button>`;
             }
 
             // Favori Butonu Mantığı
@@ -729,13 +729,12 @@
                 if(data.length === 0) {
                     favoritesArea.innerHTML = '<div class="result-placeholder">Your collection is empty.</div>';
                 } else {
-<!--                    data.reverse();-->
                     renderCards(data, 'favorites');
                 }
             });
     }
 
-    function togglePlay(btn, url) {
+    function togglePlay(btn, url, songId, isim, sarkici) {
         if (currentAudio && currentAudio.src === url) {
             if (currentAudio.paused) { currentAudio.play(); btn.innerHTML = "⏸ Stop"; }
             else { currentAudio.pause(); btn.innerHTML = "▶ Play"; }
@@ -746,7 +745,17 @@
             currentBtn = btn;
             btn.innerHTML = "⏸ Stop";
             currentAudio.onended = function() { btn.innerHTML = "▶ Play"; };
+            logPlay(songId, isim, sarkici);
         }
+    }
+
+    // Preview çalma istatistiği için backend'e log at
+    function logPlay(songId, isim, sarkici) {
+        fetch(`${API_URL}/api/plays/log`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: songId, isim: isim, sarkici: sarkici })
+        }).catch(err => console.error("Play log error:", err));
     }
 
     // Sayfa Geçişleri

@@ -51,11 +51,29 @@
         .chart-container {
             background-color: #1f1d36;
             border-radius: 15px;
-            padding: 20px;
-            width: 80%;
-            max-width: 800px;
+            padding: 15px;
             box-shadow: 0 8px 15px rgba(0,0,0,0.3);
             border: 1px solid #3d3b5a;
+            height: 260px;
+            box-sizing: border-box;
+        }
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            width: 95%;
+            max-width: 1300px;
+            margin: 0 auto;
+        }
+        @media (max-width: 900px) {
+            .charts-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        @media (max-width: 600px) {
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
@@ -79,9 +97,25 @@
     </div>
 </div>
 
-<!-- Chart.js Grafiği -->
-<div class="chart-container">
-    <canvas id="topSearchesChart"></canvas>
+
+<!-- 5 İstatistik Grafiği - 3 sütunlu grid düzeni -->
+<div class="charts-grid">
+    <div class="chart-container">
+        <canvas id="topSearchesChart"></canvas>
+    </div>
+    <div class="chart-container">
+        <canvas id="topMixedChart"></canvas>
+    </div>
+    <div class="chart-container">
+        <canvas id="topAddedChart"></canvas>
+    </div>
+    <div class="chart-container">
+        <canvas id="topRemovedChart"></canvas>
+    </div>
+    <div class="chart-container">
+        <canvas id="topPlayedChart"></canvas>
+    </div>
+
 </div>
 
 <script>
@@ -118,6 +152,7 @@
                     },
                     options: {
                         responsive: true,
+                        maintainAspectRatio: false,
                         plugins: {
                             legend: {
                                 labels: { color: '#ffffff' }
@@ -142,6 +177,59 @@
                         }
                     }
                 });
+
+                // 4. Diğer top-5 istatistik grafiklerini çiz (aynı Object[] [isim, sarkici, count] formatı)
+                function renderTopSongChart(canvasId, items, chartLabel, chartColor) {
+                    const labels = items.map(item => `${item[0]} - ${item[1]}`); // isim - sarkici
+                    const counts = items.map(item => item[2]);
+
+                    new Chart(document.getElementById(canvasId).getContext('2d'), {
+                        type: 'bar',
+                        data: {
+                            labels: labels,
+                            datasets: [{
+                                label: chartLabel,
+                                data: counts,
+                                backgroundColor: chartColor.bg,
+                                borderColor: chartColor.border,
+                                borderWidth: 1,
+                                borderRadius: 5
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            indexAxis: 'y',
+                            plugins: {
+                                legend: { labels: { color: '#ffffff' } },
+                                title: { display: true, text: chartLabel, color: '#a29bfe', font: { size: 18 } }
+                            },
+                            scales: {
+                                x: {
+                                    beginAtZero: true,
+                                    ticks: { color: '#ffffff', stepSize: 1 },
+                                    grid: { color: 'rgba(255,255,255,0.1)' }
+                                },
+                                y: {
+                                    ticks: { color: '#ffffff' },
+                                    grid: { color: 'rgba(255,255,255,0.1)' }
+                                }
+                            }
+                        }
+                    });
+                }
+
+                renderTopSongChart('topMixedChart', data.topMixed, 'Most Mixed Songs',
+                    { bg: 'rgba(162, 155, 254, 0.6)', border: 'rgba(162, 155, 254, 1)' });
+
+                renderTopSongChart('topAddedChart', data.topAddedFavorites, 'Most Added to Favorites',
+                    { bg: 'rgba(0, 230, 118, 0.6)', border: 'rgba(0, 230, 118, 1)' });
+
+                renderTopSongChart('topRemovedChart', data.topRemovedFavorites, 'Most Removed from Favorites',
+                    { bg: 'rgba(255, 82, 82, 0.6)', border: 'rgba(255, 82, 82, 1)' });
+
+                renderTopSongChart('topPlayedChart', data.topPlayed, 'Most Played Previews',
+                    { bg: 'rgba(255, 196, 0, 0.6)', border: 'rgba(255, 196, 0, 1)' });
             })
             .catch(error => {
                 console.error("İstatistikler çekilirken hata oluştu:", error);

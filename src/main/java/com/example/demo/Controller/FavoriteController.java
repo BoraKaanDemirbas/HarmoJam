@@ -1,6 +1,8 @@
 package com.example.demo.Controller;
 
+import com.example.demo.Model.FavoriteEventLog;
 import com.example.demo.Model.Song;
+import com.example.demo.Repository.FavoriteEventLogRepository;
 import com.example.demo.Repository.SongRepository;
 import com.example.demo.Service.OwnerResolverService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -9,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/favorites")
@@ -20,6 +23,9 @@ public class FavoriteController {
 
     @Autowired
     private OwnerResolverService ownerResolver;
+
+    @Autowired
+    private FavoriteEventLogRepository favoriteEventLogRepository;
 
     @PostMapping("/add")
     public ResponseEntity<?> addFavorite(@RequestBody Song song,
@@ -36,7 +42,12 @@ public class FavoriteController {
             song.setAddedAt(java.time.LocalDateTime.now());//
 
             System.out.println("Kaydedilen Şarkı: " + song.getIsim() + " (owner: " + ownerId + ")");
-            return ResponseEntity.ok(songRepository.save(song));
+            Song saved = songRepository.save(song);
+
+            favoriteEventLogRepository.save(new FavoriteEventLog(
+                    song.getId(), song.getIsim(), song.getSarkici(), "ADD", java.time.LocalDateTime.now()));
+
+            return ResponseEntity.ok(saved);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(401).body(Map.of("error", e.getMessage()));
         }
@@ -60,6 +71,11 @@ public class FavoriteController {
                                              @RequestHeader(value = "X-Device-Id", required = false) String deviceId) {
         try {
             String ownerId = ownerResolver.resolve(authHeader, deviceId);
+
+            Optional<Song> existing = songRepository.findByIdAndOwnerId(id, ownerId);
+            existing.ifPresent(song -> favoriteEventLogRepository.save(new FavoriteEventLog(
+                    song.getId(), song.getIsim(), song.getSarkici(), "REMOVE", java.time.LocalDateTime.now())));
+
             songRepository.deleteByIdAndOwnerIdOrderByAddedAtDesc(id, ownerId);
             return ResponseEntity.ok().build();
         } catch (IllegalArgumentException e) {
