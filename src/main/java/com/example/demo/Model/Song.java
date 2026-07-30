@@ -5,7 +5,7 @@ import jakarta.persistence.*;
 @Entity
 @Table(name = "favoriler")
 @IdClass(SongId.class)
-public class Song {//değişkenler
+public class    Song {//değişkenler
 
     private java.time.LocalDateTime addedAt;
 

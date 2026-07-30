@@ -35,10 +35,6 @@ public class SpotifyService {
 
         List<Song> sarkiListesi = new ArrayList<>();
         try {
-            // Not: query'i burada elle URLEncoder ile encode ETMİYORUZ.
-            // UriComponentsBuilder.encode() zaten tek seferde doğru şekilde encode ediyor;
-            // elle + burada ikinci kez encode edersek "double encoding" olur ve
-            // Türkçe karakterler (ç, ş, ğ, ü, ö, ı) bozuluyordu.
             URI uri = UriComponentsBuilder.fromHttpUrl(SEARCH_URL)
                     .queryParam("q", query)
                     .queryParam("type", "track")
@@ -53,8 +49,11 @@ public class SpotifyService {
             headers.add("Authorization", "Bearer " + token);
             HttpEntity<String> entity = new HttpEntity<>(headers);
 
-            ResponseEntity<String> response = restTemplate.exchange(uri, HttpMethod.GET, entity, String.class);//header zarfı paketleyip sunucuya gönderme işlemi
-            JsonNode items = mapper.readTree(response.getBody()).path("tracks").path("items");//gelen cevabı dönüştüryoruz istediğimiz şeyleri alıyoruz Ayıklama
+            ResponseEntity<String> response = restTemplate.exchange(uri, HttpMethod.GET, entity, String.class);//header
+            // zarfı paketleyip sunucuya gönderme işlemi
+
+            JsonNode items = mapper.readTree(response.getBody()).path("tracks").path("items");//gelen cevabı
+            // dönüştüryoruz istediğimiz şeyleri alıyoruz Ayıklama
 
             for (JsonNode item : items){//istediğimiz veriler
                 String id = item.path("id").asText();

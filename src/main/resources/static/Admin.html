@@ -75,166 +75,306 @@
                 grid-template-columns: 1fr;
             }
         }
+        .login-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(10, 8, 20, 0.92);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        .login-box {
+            background: linear-gradient(135deg, #2d2a4a 0%, #1f1d36 100%);
+            border: 1px solid #ff7eb3;
+            border-radius: 15px;
+            padding: 35px 40px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.5);
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            width: 280px;
+        }
+        .login-box h2 {
+            margin: 0 0 5px 0;
+            color: #a29bfe;
+            text-align: center;
+        }
+        .login-box input[type="password"] {
+            padding: 10px 12px;
+            border-radius: 8px;
+            border: 1px solid #3d3b5a;
+            background: #14132a;
+            color: #ffffff;
+            font-size: 1rem;
+        }
+        .login-box input[type="password"]:focus {
+            outline: none;
+            border-color: #ff7eb3;
+        }
+        .remember-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+            color: #cfcde0;
+            cursor: pointer;
+        }
+        .login-box button {
+            padding: 10px;
+            border: none;
+            border-radius: 8px;
+            background: #ff7eb3;
+            color: #1a1a2e;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+        .login-box button:hover {
+            background: #ff9cc4;
+        }
+        .login-error {
+            color: #ff5252;
+            font-size: 0.85rem;
+            min-height: 1em;
+            margin: 0;
+            text-align: center;
+        }
+
     </style>
 </head>
 <body>
 
-<h1>HarmoJam Admin Dashboard</h1>
+
+
+<!-- Admin Giriş Ekranı -->
+<div id="loginOverlay" class="login-overlay">
+    <form id="loginForm" class="login-box">
+        <h2>Admin Girişi</h2>
+        <input type="password" id="adminKeyInput" placeholder="Admin anahtarını girin" autocomplete="off" required>
+        <label class="remember-label">
+            <input type="checkbox" id="rememberKeyCheckbox">
+            Bu cihazda hatırla
+        </label>
+        <button type="submit">Giriş Yap</button>
+        <p id="loginError" class="login-error"></p>
+    </form>
+</div>
+
+<div id="dashboardContent" style="display:none;">
+
+    <h1>HarmoJam Admin Dashboard</h1>
+
+
+
+
 
 <!-- Özet İstatistik Kartları -->
-<div class="stats-container">
-    <div class="stat-card">
-        <h3>Total Searches</h3>
-        <p id="totalSearchesLoading">...</p>
+    <div class="stats-container">
+        <div class="stat-card">
+            <h3>Total Searches</h3>
+            <p id="totalSearchesLoading">...</p>
+        </div>
+        <div class="stat-card">
+            <h3>Total Favorites</h3>
+            <p id="totalFavoritesLoading">...</p>
+        </div>
+        <div class="stat-card">
+            <h3>Total Mixes</h3>
+            <p id="totalMixesLoading">...</p>
+        </div>
     </div>
-    <div class="stat-card">
-        <h3>Total Favorites</h3>
-        <p id="totalFavoritesLoading">...</p>
-    </div>
-    <div class="stat-card">
-        <h3>Total Mixes</h3>
-        <p id="totalMixesLoading">...</p>
-    </div>
-</div>
 
 <!-- 5 İstatistik Grafiği - 2x3 (3 sütun) grid düzeni -->
-<div class="charts-grid">
-    <div class="chart-container">
-        <canvas id="topSearchesChart"></canvas>
+        <div class="charts-grid">
+            <div class="chart-container">
+                <canvas id="topMixedChart"></canvas>
+            </div>
+            <div class="chart-container">
+                <canvas id="topAddedChart"></canvas>
+            </div>
+            <div class="chart-container">
+                <canvas id="topRemovedChart"></canvas>
+            </div>
+            <div class="chart-container">
+                <canvas id="topPlayedChart"></canvas>
+            </div>
+            <div class="chart-container">
+                <canvas id="topSearchesChart"></canvas>
+            </div>
+        </div>
     </div>
-    <div class="chart-container">
-        <canvas id="topMixedChart"></canvas>
-    </div>
-    <div class="chart-container">
-        <canvas id="topAddedChart"></canvas>
-    </div>
-    <div class="chart-container">
-        <canvas id="topRemovedChart"></canvas>
-    </div>
-    <div class="chart-container">
-        <canvas id="topPlayedChart"></canvas>
-    </div>
-
-</div>
 
 <script>
-    // Sayfa yüklendiğinde verileri Backend'den çek
-    document.addEventListener("DOMContentLoaded", () => {
-        fetch('/api/admin/stats')
-            .then(response => response.json())
-            .then(data => {
-                // 1. Kartları Doldur
+    const STORAGE_KEY = 'adminKey';
 
-                document.getElementById('totalMixesLoading').innerText = data.totalMixes;
-                document.getElementById('totalSearchesLoading').innerText = data.totalSearches;
-                document.getElementById('totalFavoritesLoading').innerText = data.totalFavorites;
+    function showLogin(errorMessage) {
+        document.getElementById('dashboardContent').style.display = 'none';
+        document.getElementById('loginOverlay').style.display = 'flex';
+        document.getElementById('loginError').innerText = errorMessage || '';
+    }
 
-                // 2. Grafik için verileri hazırla (Backend'den Object[] dizisi olarak geliyor)
-                const topSearches = data.topSearches;
-                const labels = topSearches.map(item => item[0]); // Kelimeler
-                const counts = topSearches.map(item => item[1]); // Aratılma sayıları
+    function showDashboard() {
+        document.getElementById('loginOverlay').style.display = 'none';
+        document.getElementById('dashboardContent').style.display = 'block';
+    }
 
-                // 3. Chart.js Grafiğini Çiz
-                const ctx = document.getElementById('topSearchesChart').getContext('2d');
-                new Chart(ctx, {
-                    type: 'bar', // Sütun grafiği
-                    data: {
-                        labels: labels,
-                        datasets: [{
-                            label: 'Number of Searches',
-                            data: counts,
-                            backgroundColor: 'rgba(255, 126, 179, 0.6)',
-                            borderColor: 'rgba(255, 126, 179, 1)',
-                            borderWidth: 1,
-                            borderRadius: 5
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: {
-                                labels: { color: '#ffffff' }
-                            },
-                            title: {
-                                display: true,
-                                text: 'Top 5 Most Searched Terms',
-                                color: '#a29bfe',
-                                font: { size: 18 }
-                            }
-                        },
-                        scales: {
-                            y: {
-                                beginAtZero: true,
-                                ticks: { color: '#ffffff', stepSize: 1 },
-                                grid: { color: 'rgba(255,255,255,0.1)' }
-                            },
-                            x: {
-                                ticks: { color: '#ffffff' },
-                                grid: { color: 'rgba(255,255,255,0.1)' }
-                            }
-                        }
-                    }
-                });
-
-                // 4. Diğer top-5 istatistik grafiklerini çiz (aynı Object[] [isim, sarkici, count] formatı)
-                function renderTopSongChart(canvasId, items, chartLabel, chartColor) {
-                    const labels = items.map(item => `${item[0]} - ${item[1]}`); // isim - sarkici
-                    const counts = items.map(item => item[2]);
-
-                    new Chart(document.getElementById(canvasId).getContext('2d'), {
-                        type: 'bar',
-                        data: {
-                            labels: labels,
-                            datasets: [{
-                                label: chartLabel,
-                                data: counts,
-                                backgroundColor: chartColor.bg,
-                                borderColor: chartColor.border,
-                                borderWidth: 1,
-                                borderRadius: 5
-                            }]
-                        },
-                        options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            indexAxis: 'y',
-                            plugins: {
-                                legend: { labels: { color: '#ffffff' } },
-                                title: { display: true, text: chartLabel, color: '#a29bfe', font: { size: 18 } }
-                            },
-                            scales: {
-                                x: {
-                                    beginAtZero: true,
-                                    ticks: { color: '#ffffff', stepSize: 1 },
-                                    grid: { color: 'rgba(255,255,255,0.1)' }
-                                },
-                                y: {
-                                    ticks: { color: '#ffffff' },
-                                    grid: { color: 'rgba(255,255,255,0.1)' }
-                                }
-                            }
-                        }
-                    });
+    function tryLoadWithKey(key, remember) {
+        fetch('/api/admin/stats', {
+            headers: { 'X-Admin-Key': key }
+        })
+            .then(response => {
+                if (response.status === 401) {
+                    localStorage.removeItem(STORAGE_KEY);
+                    showLogin("Anahtar hatalı, tekrar deneyin.");
+                    return Promise.reject(new Error("Yetkisiz erişim"));
                 }
-
-                renderTopSongChart('topMixedChart', data.topMixed, 'Most Mixed Songs',
-                    { bg: 'rgba(162, 155, 254, 0.6)', border: 'rgba(162, 155, 254, 1)' });
-
-                renderTopSongChart('topAddedChart', data.topAddedFavorites, 'Most Added to Favorites',
-                    { bg: 'rgba(0, 230, 118, 0.6)', border: 'rgba(0, 230, 118, 1)' });
-
-                renderTopSongChart('topRemovedChart', data.topRemovedFavorites, 'Most Removed from Favorites',
-                    { bg: 'rgba(255, 82, 82, 0.6)', border: 'rgba(255, 82, 82, 1)' });
-
-                renderTopSongChart('topPlayedChart', data.topPlayed, 'Most Played Previews',
-                    { bg: 'rgba(255, 196, 0, 0.6)', border: 'rgba(255, 196, 0, 1)' });
+                if (!response.ok) {
+                    return Promise.reject(new Error("Sunucu hatası: " + response.status));
+                }
+                return response.json();
+            })
+            .then(data => {
+                // Sadece kullanıcı "hatırla" kutusunu işaretlediyse kaydediyoruz.
+                // İşaretlemediyse hiçbir yerde saklamıyoruz — sayfa yenilenince tekrar soracak.
+                if (remember) {
+                    localStorage.setItem(STORAGE_KEY, key);
+                } else {
+                    localStorage.removeItem(STORAGE_KEY);
+                }
+                showDashboard();
+                renderStats(data);
             })
             .catch(error => {
                 console.error("İstatistikler çekilirken hata oluştu:", error);
-                document.getElementById('totalSearchesLoading').innerText = "Err";
-                document.getElementById('totalFavoritesLoading').innerText = "Err";
             });
+    }
+
+    document.getElementById('loginForm').addEventListener('submit', function (e) {
+        e.preventDefault();
+        const key = document.getElementById('adminKeyInput').value;
+        const remember = document.getElementById('rememberKeyCheckbox').checked;
+        if (!key) return;
+        tryLoadWithKey(key, remember);
+    });
+
+    function renderStats(data) {
+        // 1. Kartları Doldur
+        document.getElementById('totalMixesLoading').innerText = data.totalMixes;
+        document.getElementById('totalSearchesLoading').innerText = data.totalSearches;
+        document.getElementById('totalFavoritesLoading').innerText = data.totalFavorites;
+
+        // 2. Grafik için verileri hazırla (Backend'den Object[] dizisi olarak geliyor)
+        const topSearches = data.topSearches;
+        const labels = topSearches.map(item => item[0]); // Kelimeler
+        const counts = topSearches.map(item => item[1]); // Aratılma sayıları
+
+        // 3. Chart.js Grafiğini Çiz
+        const ctx = document.getElementById('topSearchesChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'bar', // Sütun grafiği
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Number of Searches',
+                    data: counts,
+                    backgroundColor: 'rgba(255, 126, 179, 0.6)',
+                    borderColor: 'rgba(255, 126, 179, 1)',
+                    borderWidth: 1,
+                    borderRadius: 5
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        labels: { color: '#ffffff' }
+                    },
+                    title: {
+                        display: true,
+                        text: 'Top 5 Most Searched Terms',
+                        color: '#a29bfe',
+                        font: { size: 18 }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: { color: '#ffffff', stepSize: 1 },
+                        grid: { color: 'rgba(255,255,255,0.1)' }
+                    },
+                    x: {
+                        ticks: { color: '#ffffff' },
+                        grid: { color: 'rgba(255,255,255,0.1)' }
+                    }
+                }
+            }
+        });
+
+        // 4. Diğer top-5 istatistik grafiklerini çiz (aynı Object[] [isim, sarkici, count] formatı)
+        function renderTopSongChart(canvasId, items, chartLabel, chartColor) {
+            const labels = items.map(item => `${item[0]} - ${item[1]}`); // isim - sarkici
+            const counts = items.map(item => item[2]);
+
+            new Chart(document.getElementById(canvasId).getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: chartLabel,
+                        data: counts,
+                        backgroundColor: chartColor.bg,
+                        borderColor: chartColor.border,
+                        borderWidth: 1,
+                        borderRadius: 5
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    indexAxis: 'y',
+                    plugins: {
+                        legend: { labels: { color: '#ffffff' } },
+                        title: { display: true, text: chartLabel, color: '#a29bfe', font: { size: 18 } }
+                    },
+                    scales: {
+                        x: {
+                            beginAtZero: true,
+                            ticks: { color: '#ffffff', stepSize: 1 },
+                            grid: { color: 'rgba(255,255,255,0.1)' }
+                        },
+                        y: {
+                            ticks: { color: '#ffffff' },
+                            grid: { color: 'rgba(255,255,255,0.1)' }
+                        }
+                    }
+                }
+            });
+        }
+
+        renderTopSongChart('topMixedChart', data.topMixed, 'Most Mixed Songs',
+            { bg: 'rgba(162, 155, 254, 0.6)', border: 'rgba(162, 155, 254, 1)' });
+
+        renderTopSongChart('topAddedChart', data.topAddedFavorites, 'Most Added to Favorites',
+            { bg: 'rgba(0, 230, 118, 0.6)', border: 'rgba(0, 230, 118, 1)' });
+
+        renderTopSongChart('topRemovedChart', data.topRemovedFavorites, 'Most Removed from Favorites',
+            { bg: 'rgba(255, 82, 82, 0.6)', border: 'rgba(255, 82, 82, 1)' });
+
+        renderTopSongChart('topPlayedChart', data.topPlayed, 'Most Played Previews',
+            { bg: 'rgba(255, 196, 0, 0.6)', border: 'rgba(255, 196, 0, 1)' });
+    }
+
+    // Sayfa yüklendiğinde: daha önce "hatırla" işaretlenmişse otomatik giriş yap,
+    // işaretlenmemişse (ya da ilk kez giriliyorsa) her zaman giriş ekranını göster.
+    document.addEventListener("DOMContentLoaded", () => {
+        const savedKey = localStorage.getItem(STORAGE_KEY);
+        if (savedKey) {
+            tryLoadWithKey(savedKey, true);
+        } else {
+            showLogin();
+        }
     });
 </script>
 </body>

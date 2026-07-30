@@ -22,8 +22,6 @@ public class MusicManagerService {
     @Autowired
     private DeezerService deezerService;
 
-    // Deezer eşleştirmelerini (audio preview bulma) paralel yapmak için havuz.
-    // Önceden her şarkı için sırayla (birbiri ardına) Deezer'a istek atılıyordu,
     // bu da 10+ şarkı için toplamda saniyelerce sürüyordu. Artık hepsi aynı anda gidiyor.
     private final ExecutorService deezerExecutor = Executors.newFixedThreadPool(10);
 
@@ -35,7 +33,7 @@ public class MusicManagerService {
 
         List<Song> spotifySongs = spotifyService.searchSong(query);
 
-        // Her şarkı için Deezer eşleştirmesini paralel olarak başlatıyoruz
+        // her şarkı için Deezer eşleştirmesini paralel olarak başlar
         List<CompletableFuture<Void>> futures = spotifySongs.stream()
                 .map(s -> CompletableFuture.runAsync(() -> {
                     try {
@@ -50,8 +48,6 @@ public class MusicManagerService {
                 }, deezerExecutor))
                 .collect(Collectors.toList());
 
-        // Hepsinin bitmesini bekliyoruz (ama artık paralel çalıştıkları için toplam süre
-        // en yavaş tekil istek kadar sürüyor, hepsinin toplamı kadar değil)
         futures.forEach(CompletableFuture::join);
 
         return spotifySongs;

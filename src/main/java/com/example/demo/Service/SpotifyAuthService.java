@@ -23,8 +23,7 @@ public class SpotifyAuthService {
 
     private final String SPOTIFY_TOKEN_URL = "https://accounts.spotify.com/api/token";//spoti api urlsi
 
-    // Token'ı ve son geçerlilik zamanını hafızada tutuyoruz, her aramada
-    // Spotify'a yeniden istek atmamak için (token normalde ~1 saat geçerli).
+    // Token'ı ve son geçerlilik zamanını hafızada tutuyoruz
     private String cachedToken;
     private long tokenExpiryEpochMillis = 0;
 
@@ -37,7 +36,8 @@ public class SpotifyAuthService {
         try {
             RestTemplate restTemplate = new RestTemplate();
             String authString = CLIENT_ID + ":" + CLIENT_SECRET;//id ile secret birleştirme çünkü spoti api öyle istiyor
-            String base64AuthString = Base64.getEncoder().encodeToString(authString.getBytes());//base64 tabanında encoder
+            String base64AuthString = Base64.getEncoder().encodeToString(authString.getBytes());//base64 tabanında
+            // encoder
 
             HttpHeaders headers = new HttpHeaders();//HTTP header zarf oluşturma işlemi
             headers.add("Authorization", "Basic " + base64AuthString);
@@ -46,10 +46,12 @@ public class SpotifyAuthService {
             MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
             body.add("grant_type", "client_credentials");//body için gerekli özellikleri belirliyoruz
 
-            HttpEntity<MultiValueMap<String, String>> requestEntity = new HttpEntity<>(body, headers);//body ve header birleştiriyoruz
+            HttpEntity<MultiValueMap<String, String>> requestEntity = new HttpEntity<>(body, headers);//body ve header
+            // birleştiriyoruz
 
             // isteği atıyoruz url+body+header+istedğimiz cevap(string)
-            ResponseEntity<String> response = restTemplate.postForEntity(SPOTIFY_TOKEN_URL, requestEntity, String.class);
+            ResponseEntity<String> response = restTemplate.postForEntity
+                    (SPOTIFY_TOKEN_URL, requestEntity, String.class);
 
             //Terminal kontrol
             System.out.println("AUTH SERVİS: Spotify'dan cevap geldi: " + response.getStatusCode());
@@ -63,7 +65,8 @@ public class SpotifyAuthService {
             tokenExpiryEpochMillis = System.currentTimeMillis() + (expiresInSeconds * 1000L);
 
             //Terminal Kontrol
-            System.out.println("AUTH SERVİS: Yeni token alındı (" + expiresInSeconds + " sn geçerli): " + temizToken.substring(0, 12) + "...");
+            System.out.println("AUTH SERVİS: Yeni token alındı (" + expiresInSeconds + " sn geçerli): "
+                    + temizToken.substring(0, 12) + "...");
             return cachedToken;
 
         } catch (Exception e) {//hata kontrol

@@ -17,11 +17,10 @@ public class DeezerService {
 
     public Song findTrack(String parcaIsmi, String sarkiciISmi){
         try{
-            String query = "artist:\"" + sarkiciISmi + "\" track:\"" + parcaIsmi + "\"";//sarkici ve sarki adları ile sorgu yapacağız
+            String query = "artist:\"" + sarkiciISmi + "\" track:\"" + parcaIsmi + "\"";//sarkici ve sarki adları
+            // ile sorgu yapacağız
 
-            // Not: elle URLEncoder.encode() + String url KULLANMIYORUZ.
-            // RestTemplate bir String url verildiğinde onu ikinci kez encode ediyordu,
-            // bu da Türkçe karakterlerin (ç, ş, ğ, ü, ö, ı) bozulmasına sebep oluyordu.
+
             // UriComponentsBuilder.encode() ile tek seferde doğru encode edip URI olarak veriyoruz.
             URI deezerUri = UriComponentsBuilder.fromHttpUrl("https://api.deezer.com/search")
                     .queryParam("q", query)

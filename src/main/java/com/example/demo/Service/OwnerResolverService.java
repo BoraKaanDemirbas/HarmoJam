@@ -29,7 +29,8 @@ public class OwnerResolverService {
         }
 
         if (deviceId == null || deviceId.isBlank()) {
-            throw new IllegalArgumentException("Kimlik bulunamadı: giriş yapmalısınız ya da X-Device-Id header'ı göndermelisiniz.");
+            throw new IllegalArgumentException
+                    ("Kimlik bulunamadı: giriş yapmalısınız ya da X-Device-Id header'ı göndermelisiniz.");
         }
         return deviceId;
     }
