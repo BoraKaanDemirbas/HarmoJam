@@ -248,6 +248,34 @@
         #favorites-view { width: 100%; display: none; flex-direction: column; align-items: center; }
         .result-placeholder { width: 100%; padding: 40px; color: rgba(255,255,255,0.5); text-align: center; font-size: 1.1rem; border: 1px dashed rgba(255,255,255,0.1); border-radius: 20px; }
 
+        .playlist-bar { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; justify-content: center; width: 100%; }
+        .playlist-pill { display: flex; align-items: center; gap: 8px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); color: white; padding: 8px 16px; border-radius: 50px; cursor: pointer; font-size: 0.9rem; transition: 0.2s; }
+        .playlist-pill:hover { background: rgba(255,255,255,0.15); }
+        .playlist-pill.active { background: linear-gradient(45deg, #D500F9, #FF4081); border-color: transparent; font-weight: bold; }
+        .playlist-pill .playlist-delete-x { opacity: 0.6; padding: 0 2px; }
+        .playlist-pill .playlist-delete-x:hover { opacity: 1; color: #ff5252; }
+        .new-playlist-btn { border-style: dashed; opacity: 0.85; }
+        .fav-search-box { width: 100%; max-width: 400px; margin-bottom: 20px; }
+        .playlist-add-row { margin-top: 8px; }
+        .playlist-add-row select {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 8px 14px;
+            border-radius: 50px;
+            border: 1px solid rgba(255,255,255,0.2);
+            background: rgba(255,255,255,0.08);
+            color: white;
+            font-size: 0.85rem;
+            font-weight: 700;
+            font-family: inherit;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .playlist-add-row select:hover { background: rgba(255,255,255,0.15); }
+        .playlist-add-row select:focus { outline: none; border-color: #FF4081; }
+        .playlist-add-row select option { background: #1a1030; color: white; }
+
+
         /* ARKA PLAN EFEKTLERİ */
         .wave { position: fixed; width: 150%; height: 150%; background: radial-gradient(circle, rgba(255, 255, 255, 0.05) 0%, transparent 60%); animation: floatWave 20s infinite ease-in-out; pointer-events: none; z-index: -1; }
         .wave:nth-child(1) { top: -25%; left: -15%; }
@@ -295,7 +323,12 @@
     </div>
 
     <div id="favorites-view">
-        <!--h2 style="margin-bottom: 20px;">Your Collection</h2-->
+        <div class="playlist-bar" id="playlistBar"></div>
+
+        <div class="search-box fav-search-box">
+            <input id="favSearchInput" type="text" placeholder="Search in this list..." oninput="filterFavoritesView()" autocomplete="off"/>
+        </div>
+
         <div class="results-area" id="favoritesArea">
             <p style="opacity: 0.5;">Loading...</p>
         </div>
@@ -481,7 +514,7 @@
             .then(data => {
                 data.forEach(song => {
                     if (!song.id) {
-                        // boşluksuz bir ID oluşturur
+                        // Örn: "mix_BohemianRhapsody_Queen" gibi boşluksuz bir ID oluşturur
                         let sarkiAdi = song.isim || "track";
                         let sanatci = song.sarkici || song.artist || "artist";
                         song.id = "mix_" + sarkiAdi.replace(/\s+/g, "") + "_" + sanatci.replace(/\s+/g, "");
@@ -570,11 +603,20 @@
             let favBtnHtml = "";
 
             if (mode === 'favorites') {
-                favBtnHtml = `
-                    <button onclick="toggleFavorite('${sarki.id}', true)" class="action-btn"
-                            style="background: linear-gradient(45deg, #424242, #212121); color: white; border: 1px solid #555;">
-                        Remove
-                    </button>`;
+                if (currentPlaylistId) {
+                    // Bir özel liste görüntüleniyor: sadece o listeden çıkar, favorilerden silme
+                    favBtnHtml = `
+                        <button onclick="removeFromPlaylist('${sarki.id}')" class="action-btn"
+                                style="background: linear-gradient(45deg, #424242, #212121); color: white; border: 1px solid #555;">
+                            Remove<br>from list
+                        </button>`;
+                } else {
+                    favBtnHtml = `
+                        <button onclick="toggleFavorite('${sarki.id}', true)" class="action-btn"
+                                style="background: linear-gradient(45deg, #424242, #212121); color: white; border: 1px solid #555;">
+                            Remove
+                        </button>`;
+                }
             } else {
                 if (isFav) {
                     favBtnHtml = `
@@ -591,6 +633,22 @@
                 }
             }
 
+            // Listeye ekleme menüsü: sadece favoriler ekranında ve en az bir özel liste varsa göster
+            let playlistAddHtml = "";
+            if (mode === 'favorites' && userPlaylists.length > 0) {
+                const options = userPlaylists.map(p => {
+                    const safePName = (p.name || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                    return `<option value="${p.id}">${safePName}</option>`;
+                }).join("");
+                playlistAddHtml = `
+                    <div class="playlist-add-row">
+                        <select onchange="handlePlaylistSelect(this, '${sarki.id}')">
+                            <option value="">+ Add to list...</option>
+                            ${options}
+                        </select>
+                    </div>`;
+            }
+
             const cardHTML = `
                 <div class="card">
                     <img src="${sarki.resimUrl}" onerror="this.src='https://via.placeholder.com/300?text=No+Image'">
@@ -603,6 +661,7 @@
                     <button onclick="oneriGetir('${safeName}', '${safeArtist}')" class="action-btn recommend-btn" style="margin-top:10px;">
                         Mix
                     </button>
+                    ${playlistAddHtml}
                 </div>
             `;
             targetArea.innerHTML += cardHTML;
@@ -717,17 +776,147 @@
     }
 
 
-    function getFavorites() {
-        favoritesArea.innerHTML = '<div class="result-placeholder">Loading...</div>';
-        fetch(`${API_URL}/favorites/all`, {
-            headers: getAuthHeaders()
-        })
+    // Şu an görüntülenen liste: null = varsayılan "Favoriler" (tüm favoriler), sayı = özel liste id'si
+    let currentPlaylistId = null;
+    let userPlaylists = [];
+    let currentFavoritesData = [];
+
+    function loadPlaylists() {
+        fetch(`${API_URL}/playlists`, { headers: getAuthHeaders() })
             .then(res => res.json())
             .then(data => {
-                favoriteSongIds.clear();
-                data.forEach(s => favoriteSongIds.add(s.id));
-                if(data.length === 0) {
-                    favoritesArea.innerHTML = '<div class="result-placeholder">Your collection is empty.</div>';
+                userPlaylists = data;
+                renderPlaylistBar();
+
+                if (currentFavoritesData.length > 0) {
+                    renderCards(currentFavoritesData, 'favorites');
+                }
+
+            })
+            .catch(err => console.error("Playlist yükleme hatası:", err));
+    }
+
+    function renderPlaylistBar() {
+        const bar = document.getElementById('playlistBar');
+        let html = `<button class="playlist-pill ${currentPlaylistId === null ? 'active' : ''}" onclick="selectPlaylist(null)">VAULT</button>`;//Favorites
+
+        userPlaylists.forEach(p => {
+            const safeName = (p.name || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+            html += `
+                <div class="playlist-pill ${currentPlaylistId === p.id ? 'active' : ''}">
+                    <span onclick="selectPlaylist(${p.id})">${p.name} (${p.songCount})</span>
+                    <span class="playlist-delete-x" onclick="event.stopPropagation(); deletePlaylistPrompt(${p.id}, '${safeName}')">✕</span>
+                </div>`;
+        });
+
+        html += `<button class="playlist-pill new-playlist-btn" onclick="createPlaylistPrompt()">+ New List</button>`;
+        bar.innerHTML = html;
+    }
+
+    function selectPlaylist(id) {
+        currentPlaylistId = id;
+        document.getElementById('favSearchInput').value = '';
+        renderPlaylistBar();
+        getFavorites();
+    }
+
+    function createPlaylistPrompt() {
+        const name = prompt("New list name:");
+        if (!name || !name.trim()) return;
+        fetch(`${API_URL}/playlists`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+            body: JSON.stringify({ name: name.trim() })
+        })
+            .then(res => res.ok ? loadPlaylists() : alert("List could not be created."))
+            .catch(err => console.error("Liste oluşturma hatası:", err));
+    }
+
+    function deletePlaylistPrompt(id, name) {
+        if (!confirm(`Delete list "${name}"? (Songs stay in your favorites)`)) return;
+        fetch(`${API_URL}/playlists/${id}`, {
+            method: 'DELETE',
+            headers: getAuthHeaders()
+        }).then(res => {
+            if (res.ok) {
+                if (currentPlaylistId === id) currentPlaylistId = null;
+                loadPlaylists();
+                getFavorites();
+            }
+        });
+    }
+
+    function handlePlaylistSelect(selectEl, songId) {
+        const playlistId = selectEl.value;
+        if (!playlistId) return;
+        fetch(`${API_URL}/playlists/${playlistId}/songs`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+            body: JSON.stringify({ songId: songId })
+        }).then(res => {
+            selectEl.selectedIndex = 0;
+            if (res.ok) {
+                loadPlaylists(); // liste şarkı sayısını (songCount) güncellemek için
+            } else {
+                alert("Could not add to list.");
+            }
+        });
+    }
+
+    function removeFromPlaylist(songId) {
+        if (!confirm("Remove this song from the list?")) return;
+        fetch(`${API_URL}/playlists/${currentPlaylistId}/songs/${songId}`, {
+            method: 'DELETE',
+            headers: getAuthHeaders()
+        }).then(res => {
+            if (res.ok) {
+                loadPlaylists();
+                getFavorites();
+            }
+        });
+    }
+
+    function filterFavoritesView() {
+        const term = document.getElementById('favSearchInput').value.trim().toLocaleLowerCase('tr');
+        if (!term) {
+            if (currentFavoritesData.length === 0) {
+                favoritesArea.innerHTML = '<div class="result-placeholder">This list is empty.</div>';
+            } else {
+                renderCards(currentFavoritesData, 'favorites');
+            }
+            return;
+        }
+        const filtered = currentFavoritesData.filter(s => {
+            const name = (s.isim || '').toLocaleLowerCase('tr');
+            const artist = (s.sarkici || '').toLocaleLowerCase('tr');
+            return name.includes(term) || artist.includes(term);
+        });
+        if (filtered.length === 0) {
+            favoritesArea.innerHTML = '<div class="result-placeholder">No matches in this list.</div>';
+        } else {
+            renderCards(filtered, 'favorites');
+        }
+    }
+
+    function getFavorites() {
+        favoritesArea.innerHTML = '<div class="result-placeholder">Loading...</div>';
+
+        const endpoint = currentPlaylistId
+            ? `${API_URL}/playlists/${currentPlaylistId}/songs`
+            : `${API_URL}/favorites/all`;
+
+        fetch(endpoint, { headers: getAuthHeaders() })
+            .then(res => res.json())
+            .then(data => {
+                if (!currentPlaylistId) {
+                    // Global favori ID setini sadece "tüm favoriler" görünümündeyken güncelle;
+                    // bir alt-liste (playlist), tüm favorilerin sadece bir kısmını içerir.
+                    favoriteSongIds.clear();
+                    data.forEach(s => favoriteSongIds.add(s.id));
+                }
+                currentFavoritesData = data;
+                if (data.length === 0) {
+                    favoritesArea.innerHTML = '<div class="result-placeholder">This list is empty.</div>';
                 } else {
                     renderCards(data, 'favorites');
                 }
@@ -783,6 +972,7 @@
         btnFav.classList.add('active');
         btnSearch.classList.remove('active');
         btnAccount.classList.remove('active');
+        loadPlaylists();
         getFavorites();
     }
 
@@ -800,14 +990,15 @@
     searchInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') performSearch(); });
 
     function resetToHome() {
-    // 1. Arama çubuğunun içini boşalt
-    document.getElementById('search-view').value = '';
-
-    // 2. Şarkı sonuçlarının listelendiği alanı temizle
-    document.getElementById('favorites-view').innerHTML = '';
-
-    // 3. (Opsiyonel) Eğer "Results for 'aşk'" yazısını da gizlemek istersen onu da temizle
-}
+        // Arama kutusunu ve sonuçları temizleyip arama ekranına dön.
+        // Not: eskiden burada favorites-view.innerHTML = '' yapılıyordu, bu da
+        // playlist çubuğu/arama kutusu dahil favoriler ekranının tamamını kalıcı
+        // olarak siliyordu (bir daha asla geri gelmiyordu). Artık sadece arama
+        // ekranını sıfırlıyoruz.
+        if (searchInput) searchInput.value = '';
+        resultsArea.innerHTML = '';
+        showSearch();
+    }
 
 </script>
 </body>
