@@ -161,6 +161,7 @@ public class PlaylistController {
 
     // Bir şarkıyı listeden çıkarır (favorilerden silmez, sadece o listeden çıkarır)
     @DeleteMapping("/{playlistId}/songs/{songId}")
+    @Transactional
     public ResponseEntity<?> removeSongFromPlaylist(@PathVariable Long playlistId,
                                                       @PathVariable String songId,
                                                       @RequestHeader(value = "Authorization", required = false) String authHeader,

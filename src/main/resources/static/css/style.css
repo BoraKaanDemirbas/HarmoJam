@@ -1,0 +1,281 @@
+        :root {
+          --bg1: #140b33;
+          --bg2: #3b0a73;
+          --bg3: #ff6cab;
+          --accent: #ffb347;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+          margin: 0;
+          font-family: "Plus Jakarta Sans", sans-serif;
+          min-height: 100vh;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          color: #fff;
+          background:
+            radial-gradient(circle at 10% 0%, rgba(255, 108, 171, 0.28) 0, transparent 50%),
+            radial-gradient(circle at 90% 100%, rgba(255, 179, 71, 0.25) 0, transparent 55%),
+            linear-gradient(135deg, var(--bg1), var(--bg2), var(--bg3));
+          background-size: 200% 200%;
+          animation: gradientShift 18s ease-in-out infinite;
+          overflow-x: hidden;
+          padding: 20px;
+        }
+
+        body.results-mode {
+            justify-content: flex-start;
+            padding-top: 60px;
+        }
+
+        .content-wrapper {
+          position: relative;
+          text-align: center;
+          width: 100%;
+          max-width: 1200px;
+          z-index: 10;
+          transition: transform 0.5s ease;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+        }
+
+        h1 {
+          margin: 0 0 24px;
+          font-weight: 800;
+          font-size: 64px;
+          letter-spacing: -1.5px;
+          background: linear-gradient(to bottom, #fff, #ffe3ec);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          filter: drop-shadow(0 4px 15px rgba(0,0,0,0.3));
+        }
+
+        /* MENÜ */
+        .nav-menu {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+        .nav-btn {
+            background: transparent;
+            border: none;
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 1.2rem;
+            cursor: pointer;
+            padding: 10px 15px;
+            transition: all 0.3s ease;
+            border-bottom: 2px solid transparent;
+            font-weight: 600;
+        }
+        .nav-btn:hover { color: white; }
+        .nav-btn.active {
+            color: #fff;
+            border-bottom: 2px solid #D500F9;
+            text-shadow: 0 0 10px rgba(213, 0, 249, 0.5);
+        }
+
+        /* ARAMA KUTUSU & GEÇMİŞ */
+        #search-view { width: 100%; display: flex; flex-direction: column; align-items: center; }
+
+        .search-container-outer {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .search-box {
+          display: flex;
+          align-items: center;
+          width: 100%;
+          max-width: 600px;
+          background: rgba(15, 8, 32, 0.4);
+          backdrop-filter: blur(15px);
+          border-radius: 999px;
+          padding: 10px 10px 10px 24px;
+          border: 1px solid rgba(255, 255, 255, 0.15);
+          box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
+          transition: all 0.3s;
+        }
+        .search-box:focus-within {
+            background: rgba(15, 8, 32, 0.7);
+            border-color: rgba(255, 179, 71, 0.5);
+            transform: scale(1.02);
+        }
+        .search-box input { flex: 1; border: none; outline: none; font-size: 18px; color: #fff; background: transparent; font-family: inherit; }
+        .search-btn { width: 50px; height: 50px; background: radial-gradient(circle at 30% 0%, #ffe6b3 0, #ffb347 30%, #ff6cab 100%); border: none; display: flex; justify-content: center; align-items: center; cursor: pointer; border-radius: 50%; margin-left: 10px; transition: transform 0.2s; }
+        .search-btn:hover { transform: scale(1.05); filter: brightness(1.1); }
+        .search-btn svg { width: 22px; height: 22px; fill: #2a0a4a; }
+
+<!--                /* Butona .loading class'ı eklendiğinde içindeki metni/ikonu gizle */-->
+                #searchBtn.loading {
+            pointer-events: none; /* Arama sırasında üst üste tıklamayı engeller */
+            position: relative; /* Spinner'ı ortalamak için gerekli */
+        }
+
+            #searchBtn.loading svg {
+                opacity: 0; /* Büyüteç ikonunu gizle */
+            }
+            #searchBtn.loading::after {
+        content: "";
+        position: absolute;
+        width: 22px;
+        height: 22px;
+        top: 50%;
+        left: 50%;
+        margin-top: -11px;
+        margin-left: -11px;
+        border-radius: 50%;
+        background: conic-gradient(
+            from 0deg,
+            transparent 0%,
+            rgba(255, 255, 255, 0.15) 20%,
+            #fff5e6 45%,
+            #ffb347 70%,
+            #ff6cab 90%,
+            transparent 100%
+        );
+        -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 3px));
+        mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 3px));
+        animation: spin 0.8s linear infinite;
+    }
+
+        /* Dönüş (Spin) animasyonunun kuralı */
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* --- SEARCH HISTORY CHIPS --- */
+        .history-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 15px;
+            max-width: 600px;
+        }
+
+        .history-chip {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            color: #ddd;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .history-chip:hover {
+            background: rgba(213, 0, 249, 0.2);
+            border-color: #D500F9;
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        .clear-history-btn {
+            font-size: 0.8rem;
+            color: rgba(255,255,255,0.4);
+            background: none;
+            border: none;
+            cursor: pointer;
+            text-decoration: underline;
+            margin-left: 10px;
+        }
+        .clear-history-btn:hover { color: #ff6b6b; }
+
+        .tagline { margin-top: 10px; font-size: 14px; color: rgba(255, 255, 255, 0.65); }
+
+        /* KART ALANI */
+        .results-area {
+          width: 100%;
+          max-width: 1200px;
+          display: flex;
+          flex-wrap: wrap;
+          gap: 20px;
+          justify-content: center;
+          margin-top: 30px;
+          opacity: 0;
+          transform: translateY(20px);
+          transition: all 0.5s ease;
+          pointer-events: none;
+        }
+        .results-area.show { opacity: 1; transform: translateY(0); pointer-events: auto; }
+
+        /* KART TASARIMI */
+        .card {
+          background: rgba(20, 15, 45, 0.6);
+          backdrop-filter: blur(10px);
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          width: 250px;
+          padding: 15px;
+          border-radius: 20px;
+          text-align: left;
+          transition: transform 0.3s, background 0.3s;
+          box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+        .card:hover { transform: translateY(-8px); background: rgba(30, 25, 60, 0.8); border-color: rgba(255, 179, 71, 0.3); }
+        .card img { width: 100%; border-radius: 12px; margin-bottom: 12px; aspect-ratio: 1/1; object-fit: cover; }
+        .card h3 { margin: 0 0 5px 0; font-size: 1.1rem; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .card p { margin: 0 0 15px 0; font-size: 0.9rem; color: rgba(255, 255, 255, 0.6); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+        .card-actions { display: flex; gap: 8px; margin-bottom: 10px; }
+        .action-btn { flex: 1; padding: 8px 0; border-radius: 50px; font-size: 0.85rem; font-weight: 700; cursor: pointer; border: none; transition: 0.2s; }
+        .play-btn { background: rgba(255, 255, 255, 0.1); color: white; border: 1px solid rgba(255, 255, 255, 0.2); }
+        .play-btn:hover { background: rgba(255, 255, 255, 0.2); }
+        .recommend-btn { background: linear-gradient(135deg, #ffb347, #ff6cab); color: #140b33; width: 100%; border: none; padding: 8px; border-radius: 50px; font-weight: bold; cursor: pointer; }
+        .recommend-btn:hover { filter: brightness(1.1); }
+
+        #favorites-view { width: 100%; display: none; flex-direction: column; align-items: center; }
+        .result-placeholder { width: 100%; padding: 40px; color: rgba(255,255,255,0.5); text-align: center; font-size: 1.1rem; border: 1px dashed rgba(255,255,255,0.1); border-radius: 20px; }
+
+        .playlist-bar { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; justify-content: center; width: 100%; }
+        .playlist-pill { display: flex; align-items: center; gap: 8px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); color: white; padding: 8px 16px; border-radius: 50px; cursor: pointer; font-size: 0.9rem; transition: 0.2s; }
+        .playlist-pill:hover { background: rgba(255,255,255,0.15); }
+        .playlist-pill.active { background: linear-gradient(45deg, #D500F9, #FF4081); border-color: transparent; font-weight: bold; }
+        .playlist-pill .playlist-delete-x { opacity: 0.6; padding: 0 2px; }
+        .playlist-pill .playlist-delete-x:hover { opacity: 1; color: #ff5252; }
+        .new-playlist-btn { border-style: dashed; opacity: 0.85; }
+        .fav-search-box { width: 100%; max-width: 400px; margin-bottom: 20px; }
+        .playlist-add-row { margin-top: 8px; }
+        .playlist-add-row select {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 8px 14px;
+            border-radius: 50px;
+            border: 1px solid rgba(255,255,255,0.2);
+            background: rgba(255,255,255,0.08);
+            color: white;
+            font-size: 0.85rem;
+            font-weight: 700;
+            font-family: inherit;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .playlist-add-row select:hover { background: rgba(255,255,255,0.15); }
+        .playlist-add-row select:focus { outline: none; border-color: #FF4081; }
+        .playlist-add-row select option { background: #1a1030; color: white; }
+
+
+        /* ARKA PLAN EFEKTLERİ */
+        .wave { position: fixed; width: 150%; height: 150%; background: radial-gradient(circle, rgba(255, 255, 255, 0.05) 0%, transparent 60%); animation: floatWave 20s infinite ease-in-out; pointer-events: none; z-index: -1; }
+        .wave:nth-child(1) { top: -25%; left: -15%; }
+        .wave:nth-child(2) { bottom: -25%; right: -20%; animation-duration: 24s; }
+        .glow { position: fixed; width: 420px; height: 420px; border-radius: 50%; filter: blur(60px); opacity: 0.5; pointer-events: none; z-index: -1; }
+        .glow-1 { top: 10%; right: 5%; background: radial-gradient(circle, rgba(255, 179, 71, 0.65), transparent 60%); }
+        .glow-2 { bottom: -10%; left: -5%; background: radial-gradient(circle, rgba(120, 212, 255, 0.7), transparent 60%); }
+        .noise { pointer-events: none; position: fixed; inset: 0; background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 160 160' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.1' numOctaves='3' stitchTiles='noStitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.18'/%3E%3C/svg%3E"); mix-blend-mode: soft-light; opacity: 0.4; z-index: 0; }
+
+        @keyframes floatWave { 0% { transform: translateY(0px) rotate(0deg); } 50% { transform: translateY(40px) rotate(10deg); } 100% { transform: translateY(0px) rotate(0deg); } }
+        @keyframes gradientShift { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+        @media (max-width: 600px) { h1 { font-size: 42px; } .search-box { width: 90%; } }
