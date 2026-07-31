@@ -49,14 +49,18 @@ public class Controller {
     }*/
 
     @PostMapping("/search")
-    public List<Song> searchMusic(@RequestBody String query) {
+    public List<Song> searchMusic(@RequestBody String query, @RequestParam(defaultValue = "0") int offset) {
 
-        SearchLog log = new SearchLog(query, LocalDateTime.now());
-        searchLogRepository.save(log);
+        // "Load More" ile gelen sonraki sayfaları istatistiklerde tekrar tekrar loglamayalım,
+        // sadece aramanın ilk sayfasını (offset=0) kaydediyoruz.
+        if (offset == 0) {
+            SearchLog log = new SearchLog(query, LocalDateTime.now());
+            searchLogRepository.save(log);
+        }
 
-        System.out.println("Gelen Arama: " + query);
+        System.out.println("Gelen Arama: " + query + " (offset=" + offset + ")");
 
-        return musicManager.searchSong(query);
+        return musicManager.searchSong(query, offset);
     }
 /*
     @GetMapping("/recommend")

@@ -35,6 +35,9 @@
     const API_URL = window.location.origin;
 
     let lastSearchResults = [];
+    let currentSearchQuery = '';
+    let currentSearchOffset = 0;
+    const SEARCH_PAGE_SIZE = 12;
     let currentAudio = null;
     let currentBtn = null;
     let favoriteSongIds = new Set();
@@ -130,6 +133,10 @@
 
         saveHistory(query);
 
+        currentSearchQuery = query;//
+        currentSearchOffset = 0;//
+        document.getElementById('loadMoreBtn').style.display = 'none';//
+
         // UI Güncelle
         document.body.classList.add('results-mode');
         searchBtn.classList.add('loading');
@@ -169,6 +176,9 @@
                 } else {
                      statusText.innerText = `Results for "${query}"`;
                 }
+                // Tam bir sayfa (12) dolu geldiyse muhtemelen daha fazla sonuç vardır
+                document.getElementById('loadMoreBtn').style.display = (data.length === SEARCH_PAGE_SIZE) ? 'block' : 'none';//
+
             })
             .catch(err => {
                 console.error(err);
@@ -182,6 +192,43 @@
                 window.scrollTo({ top: 0, behavior: 'smooth' });
             });
     }
+
+    function loadMoreResults() {
+        currentSearchOffset += SEARCH_PAGE_SIZE;
+        const loadMoreBtn = document.getElementById('loadMoreBtn');
+        loadMoreBtn.disabled = true;
+        loadMoreBtn.innerText = "Loading...";
+
+        fetch(`${API_URL}/search?offset=${currentSearchOffset}`, {
+            method: 'POST',
+            body: currentSearchQuery,
+            headers: {
+                'Content-Type': 'text/plain; charset=UTF-8'
+            }
+        })
+            .then(response => response.json())
+            .then(data => {
+                data.forEach(song => {
+                    if (!song.id) {
+                        let sarkiAdi = song.isim || "track";
+                        let sanatci = song.sarkici || song.artist || "artist";
+                        song.id = "mix_" + sarkiAdi.replace(/\s+/g, "") + "_" + sanatci.replace(/\s+/g, "");
+                    }
+                });
+                lastSearchResults = lastSearchResults.concat(data);
+                renderCards(data, 'search', true); // append = true, mevcut kartların altına ekler
+                loadMoreBtn.style.display = (data.length === SEARCH_PAGE_SIZE) ? 'block' : 'none';
+            })
+            .catch(err => {
+                console.error(err);
+                showToast("Could not load more results.", true);
+            })
+            .finally(() => {
+                loadMoreBtn.disabled = false;
+                loadMoreBtn.innerText = "Load More";
+            });
+    }
+
 
     // --- 2. FONKSİYON: MIX / ÖNERİ GETİRME ---
     function oneriGetir(trackName, artistName) {
@@ -218,12 +265,15 @@
     }
 
     // --- KARTLARI ÇİZME ---
-    function renderCards(data, mode) {
+    function renderCards(data, mode,append = false) {
         const targetArea = (mode === 'favorites') ? favoritesArea : resultsArea;
-        targetArea.innerHTML = "";
-
+        if (!append) {
+            targetArea.innerHTML = "";
+        }
         if (!data || data.length === 0) {
-            targetArea.innerHTML = `<div class="result-placeholder">No music found in this galaxy.</div>`;
+            if (!append) {
+                targetArea.innerHTML = `<div class="result-placeholder">No music found in this galaxy.</div>`;
+            }
             return;
         }
 
@@ -486,6 +536,17 @@
             }
         });
     }
+    let toastTimeout;
+    function showToast(message, isError = false) {
+        const toast = document.getElementById('toast');
+        toast.innerText = message;
+        toast.classList.toggle('error', isError);
+        toast.classList.add('show');
+        clearTimeout(toastTimeout);
+        toastTimeout = setTimeout(() => {
+            toast.classList.remove('show');
+        }, 2200);
+    }
 
     function handlePlaylistSelect(selectEl, songId) {
         const playlistId = selectEl.value;
@@ -497,11 +558,14 @@
         }).then(res => {
             selectEl.selectedIndex = 0;
             if (res.ok) {
+                const playlist = userPlaylists.find(p => String(p.id) === String(playlistId));//
+                showToast(playlist ? `Added to "${playlist.name}"!` : "Added to list!");//toast
                 loadPlaylists(); // liste şarkı sayısını (songCount) güncellemek için
             } else {
                 alert("Could not add to list.");
             }
         });
+
     }
 
     function removeFromPlaylist(songId) {
@@ -540,6 +604,7 @@
     }
 
     function getFavorites() {
+        favoritesArea.classList.remove('show');
         favoritesArea.innerHTML = '<div class="result-placeholder">Loading...</div>';
 
         const endpoint = currentPlaylistId
@@ -596,10 +661,22 @@
     const btnFav = document.getElementById('btn-fav');
     const btnAccount = document.getElementById('btn-account');
 
+    // Sayfalar (Search/Favorites/Account) arasında ani display değişimi yerine
+    // yumuşak bir fade-out/fade-in geçişi yapan yardımcı fonksiyon.
+    function switchView(showEl, hideEls) {
+        hideEls.forEach(el => { el.style.opacity = '0'; });
+        setTimeout(() => {
+            hideEls.forEach(el => { el.style.display = 'none'; });
+            showEl.style.display = 'flex';
+            showEl.style.opacity = '0';
+            requestAnimationFrame(() => {
+                showEl.style.opacity = '1';
+            });
+        }, 180);
+    }
+
     function showSearch() {
-        searchView.style.display = 'flex';
-        favoritesView.style.display = 'none';
-        accountView.style.display = 'none';
+        switchView(searchView, [favoritesView, accountView]);
         btnSearch.classList.add('active');
         btnFav.classList.remove('active');
         btnAccount.classList.remove('active');
@@ -607,9 +684,7 @@
     }
 
     function showFavorites() {
-        searchView.style.display = 'none';
-        favoritesView.style.display = 'flex';
-        accountView.style.display = 'none';
+        switchView(favoritesView, [searchView, accountView]);
         btnFav.classList.add('active');
         btnSearch.classList.remove('active');
         btnAccount.classList.remove('active');
@@ -618,13 +693,41 @@
     }
 
     function showAccount() {
-        searchView.style.display = 'none';
-        favoritesView.style.display = 'none';
-        accountView.style.display = 'flex';
+        switchView(accountView, [searchView, favoritesView]);
         btnAccount.classList.add('active');
         btnSearch.classList.remove('active');
         btnFav.classList.remove('active');
     }
+
+//    function showSearch() {
+//        searchView.style.display = 'flex';
+//        favoritesView.style.display = 'none';
+//        accountView.style.display = 'none';
+//        btnSearch.classList.add('active');
+//        btnFav.classList.remove('active');
+//        btnAccount.classList.remove('active');
+//        updateSearchButtons();
+//    }
+//
+//    function showFavorites() {
+//        searchView.style.display = 'none';
+//        favoritesView.style.display = 'flex';
+//        accountView.style.display = 'none';
+//        btnFav.classList.add('active');
+//        btnSearch.classList.remove('active');
+//        btnAccount.classList.remove('active');
+//        loadPlaylists();
+//        getFavorites();
+//    }
+//
+//    function showAccount() {
+//        searchView.style.display = 'none';
+//        favoritesView.style.display = 'none';
+//        accountView.style.display = 'flex';
+//        btnAccount.classList.add('active');
+//        btnSearch.classList.remove('active');
+//        btnFav.classList.remove('active');
+//    }
 
     // Event Listeners
     searchBtn.addEventListener('click', performSearch);

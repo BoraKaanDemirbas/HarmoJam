@@ -27,11 +27,12 @@ public class MusicManagerService {
 
 
     //arama metodu
-    public List<Song> searchSong(String query) {
+    public List<Song> searchSong(String query, int offset) {
 
-        System.out.println("MANAGER: Spotify araması yapılıyor -> " + query);//terminal Kontrol
+        System.out.println("MANAGER: Spotify araması yapılıyor -> " + query + " (offset=" + offset + ")");//terminal Kontrol
 
-        List<Song> spotifySongs = spotifyService.searchSong(query);
+
+        List<Song> spotifySongs = spotifyService.searchSong(query, offset);
 
         // her şarkı için Deezer eşleştirmesini paralel olarak başlar
         List<CompletableFuture<Void>> futures = spotifySongs.stream()

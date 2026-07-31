@@ -27,8 +27,8 @@ public class SpotifyService {
 
     private final String SEARCH_URL = "https://api.spotify.com/v1/search";//gerekli url
 
-    public List<Song> searchSong(String query) {
-        System.out.println("SPOTIFY: Arama yapılıyor -> " + query);//terminal kontrol
+    public List<Song> searchSong(String query, int offset) {
+        System.out.println("SPOTIFY: Arama yapılıyor -> " + query + " (offset=" + offset + ")");//terminal kontrol
 
         String token = authService.getAccessToken();//token alma işlemi
         if (token == null) return new ArrayList<>();
@@ -39,6 +39,7 @@ public class SpotifyService {
                     .queryParam("q", query)
                     .queryParam("type", "track")
                     .queryParam("limit", 12)
+                    .queryParam("offset", offset)
                     .queryParam("market", "TR")
                     .build()
                     .encode(StandardCharsets.UTF_8)

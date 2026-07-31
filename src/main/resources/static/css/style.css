@@ -237,7 +237,24 @@
         .recommend-btn:hover { filter: brightness(1.1); }
 
         #favorites-view { width: 100%; display: none; flex-direction: column; align-items: center; }
+        .load-more-btn {
+            display: none;
+            margin: 30px auto 0 auto;
+            padding: 12px 32px;
+            border-radius: 50px;
+            border: 1px solid rgba(255,255,255,0.2);
+            background: rgba(255,255,255,0.08);
+            color: white;
+            font-weight: 700;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .load-more-btn:hover { background: rgba(255,255,255,0.18); }
+        .load-more-btn:disabled { opacity: 0.6; cursor: default; }
         .result-placeholder { width: 100%; padding: 40px; color: rgba(255,255,255,0.5); text-align: center; font-size: 1.1rem; border: 1px dashed rgba(255,255,255,0.1); border-radius: 20px; }
+        #search-view, #favorites-view, #account-view { transition: opacity 0.25s ease; }
+
 
         .playlist-bar { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; justify-content: center; width: 100%; }
         .playlist-pill { display: flex; align-items: center; gap: 8px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); color: white; padding: 8px 16px; border-radius: 50px; cursor: pointer; font-size: 0.9rem; transition: 0.2s; }
@@ -279,3 +296,24 @@
         @keyframes floatWave { 0% { transform: translateY(0px) rotate(0deg); } 50% { transform: translateY(40px) rotate(10deg); } 100% { transform: translateY(0px) rotate(0deg); } }
         @keyframes gradientShift { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
         @media (max-width: 600px) { h1 { font-size: 42px; } .search-box { width: 90%; } }
+
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%) translateY(20px);
+            background: linear-gradient(45deg, #00c853, #00e676);
+            color: #0a0818;
+            padding: 12px 24px;
+            border-radius: 50px;
+            font-weight: 700;
+            font-size: 0.9rem;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease, transform 0.3s ease;
+            z-index: 2000;
+            white-space: nowrap;
+        }
+        .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+        .toast.error { background: linear-gradient(45deg, #ff5252, #ff8a80); }
