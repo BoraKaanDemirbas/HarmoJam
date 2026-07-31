@@ -19,6 +19,22 @@
     function clearAuthToken() {
         localStorage.removeItem('harmoJamAuthToken');
     }
+
+    // YENİ: kullanıcı adını da token ile birlikte sakla/temizle
+    function setAuthUsername(username) {
+        localStorage.setItem('harmoJamUsername', username);
+    }
+    function clearAuthUsername() {
+        localStorage.removeItem('harmoJamUsername');
+    }
+
+    // YENİ: kime ait geçmiş gösterileceğine karar veren fonksiyon
+    function getHistoryKey() {
+        const username = localStorage.getItem('harmoJamUsername');
+        // Giriş yapılmışsa kullanıcı adına özel key, yapılmamışsa misafir cihazına özel key
+        return username ? `harmoJamHistory_${username}` : `harmoJamHistory_guest_${getDeviceId()}`;
+    }
+
     // Favoriler ile ilgili her isteğe eklenecek header'lar.
     // Giriş yapılmışsa Authorization önceliklidir (backend bunu X-Device-Id'ye tercih eder),
     // yapılmamışsa misafir kimliği (X-Device-Id) kullanılır.
@@ -92,18 +108,22 @@
 
     function doLogout() {
         clearAuthToken();
+        clearAuthUsername();
         accountLoggedIn.style.display = 'none';
         accountLoggedOut.style.display = 'flex';
         authUsernameInput.value = '';
         authPasswordInput.value = '';
         refreshFavoriteIds(); // favori listesini tekrar misafir kimliğine göre tazele
+        renderHistory();
     }
 
     function onLoginSuccess(username) {
         accountUsername.innerText = username;
         accountLoggedOut.style.display = 'none';
         accountLoggedIn.style.display = 'flex';
+        setAuthUsername(username);
         refreshFavoriteIds(); // favori listesini üyenin kendi verisine göre tazele
+        renderHistory();
     }
 
     // Sayfa yenilendiğinde localStorage'daki token hâlâ geçerli mi diye kontrol eder.
@@ -365,17 +385,19 @@
 
     // Geçmiş Kaydetme
     function saveHistory(query) {
-        let history = JSON.parse(localStorage.getItem('harmoJamHistory')) || [];
+        const key = getHistoryKey();
+        let history = JSON.parse(localStorage.getItem(key)) || [];
         history = history.filter(item => item !== query);
         history.unshift(query);
         if (history.length > 5) history.pop();
-        localStorage.setItem('harmoJamHistory', JSON.stringify(history));
+        localStorage.setItem(key, JSON.stringify(history));
         renderHistory();
     }
 
     // Geçmişi Ekrana Basma
     function renderHistory() {
-        let history = JSON.parse(localStorage.getItem('harmoJamHistory')) || [];
+        const key = getHistoryKey();
+        let history = JSON.parse(localStorage.getItem(key)) || [];
         historyContainer.innerHTML = "";
         if (history.length === 0) return;
 
@@ -383,23 +405,16 @@
             const chip = document.createElement('div');
             chip.className = 'history-chip';
             chip.innerHTML = `<span>🕒 ${term}</span>`;
-            chip.onclick = () => {
-                searchInput.value = term;
-                performSearch();
-            };
+            chip.onclick = () => { searchInput.value = term; performSearch(); };
             historyContainer.appendChild(chip);
         });
 
         const clearBtn = document.createElement('button');
-        clearBtn.className = 'clear-history-btn';
-        clearBtn.innerText = 'Clear';
-        clearBtn.onclick = () => {
-            localStorage.removeItem('harmoJamHistory');
-            renderHistory();
-        };
-        historyContainer.appendChild(clearBtn);
-    }
-
+            clearBtn.className = 'clear-history-btn';
+            clearBtn.innerText = 'Clear';
+            clearBtn.onclick = () => { localStorage.removeItem(key); renderHistory(); };
+            historyContainer.appendChild(clearBtn);
+        }
     // Favori ID'lerini Senkronize Et
     function refreshFavoriteIds() {
         fetch(`${API_URL}/favorites/all`, {
