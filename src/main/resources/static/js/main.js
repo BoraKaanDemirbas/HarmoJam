@@ -297,7 +297,7 @@
             return;
         }
 
-        data.forEach((sarki) => {
+        data.forEach((sarki, cardIndex) => {
             // Tırnak işaretleri JS'yi bozmasın diye temizlik
             const safeName = sarki.isim ? sarki.isim.replace(/'/g, "\\'").replace(/"/g, '&quot;') : "";
             const safeArtist = sarki.sarkici ? sarki.sarkici.replace(/'/g, "\\'").replace(/"/g, '&quot;') : "";
@@ -360,8 +360,9 @@
                     </div>`;
             }
 
+            const staggerIndex = Math.min(cardIndex, 10); // çok kartta gecikme sonsuza uzamasın diye üst sınır
             const cardHTML = `
-                <div class="card">
+                <div class="card" style="--i:${staggerIndex}">
                     <img src="${sarki.resimUrl}" onerror="this.src='https://via.placeholder.com/300?text=No+Image'">
                     <h3>${sarki.isim}</h3>
                     <p>${sarki.sarkici}</p>
@@ -401,9 +402,10 @@
         historyContainer.innerHTML = "";
         if (history.length === 0) return;
 
-        history.forEach(term => {
+        history.forEach((term, chipIndex) => {
             const chip = document.createElement('div');
             chip.className = 'history-chip';
+            chip.style.setProperty('--i', chipIndex);
             chip.innerHTML = `<span>🕒 ${term}</span>`;
             chip.onclick = () => { searchInput.value = term; performSearch(); };
             historyContainer.appendChild(chip);
@@ -506,11 +508,14 @@
         const bar = document.getElementById('playlistBar');
         let html = `<button class="playlist-pill ${currentPlaylistId === null ? 'active' : ''}" onclick="selectPlaylist(null)">VAULT</button>`;//Favorites
 
-        userPlaylists.forEach(p => {
+        userPlaylists.forEach((p, pillIndex) => {
             const safeName = (p.name || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
             html += `
-                <div class="playlist-pill ${currentPlaylistId === p.id ? 'active' : ''}">
+                <div class="playlist-pill ${currentPlaylistId === p.id ? 'active' : ''}" style="--i:${pillIndex}">
                     <span onclick="selectPlaylist(${p.id})">${p.name} (${p.songCount})</span>
+                    <span class="playlist-share-icon ${p.shareToken ? 'is-shared' : ''}"
+                          onclick="event.stopPropagation(); sharePlaylist(${p.id})"
+                          title="${p.shareToken ? 'Copy share link' : 'Share this list'}">🔗</span>
                     <span class="playlist-delete-x" onclick="event.stopPropagation(); deletePlaylistPrompt(${p.id}, '${safeName}')">✕</span>
                 </div>`;
         });
@@ -551,6 +556,32 @@
             }
         });
     }
+
+    // Bir listeyi link ile paylaşılabilir hale getirir; linki panoya kopyalar.
+    // Backend, liste zaten paylaşılıyorsa aynı token'ı döndürdüğü için tekrar tıklamak linki bozmaz.
+    function sharePlaylist(id) {
+        fetch(`${API_URL}/playlists/${id}/share`, {
+            method: 'POST',
+            headers: getAuthHeaders()
+        })
+            .then(res => {
+                if (!res.ok) return Promise.reject(new Error("Could not create share link."));
+                return res.json();
+            })
+            .then(data => {
+                const shareUrl = `${API_URL}/shared.html?token=${data.shareToken}`;
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(shareUrl)
+                        .then(() => showToast("Share link copied to clipboard!"))
+                        .catch(() => window.prompt("Copy this link:", shareUrl));
+                } else {
+                    window.prompt("Copy this link:", shareUrl);
+                }
+                loadPlaylists(); // ikonun "paylaşılıyor" durumuna geçmesi için listeyi tazele
+            })
+            .catch(() => showToast("Could not create share link.", true));
+    }
+
     let toastTimeout;
     function showToast(message, isError = false) {
         const toast = document.getElementById('toast');

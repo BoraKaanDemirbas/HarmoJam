@@ -162,6 +162,15 @@
             max-width: 600px;
         }
 
+        /* YUMUŞAK GİRİŞ ANİMASYONU: kartlar, geçmiş çipleri ve liste pilleri
+           DOM'a her eklendiğinde (yeni arama, favori filtreleme, liste değiştirme vs.)
+           bu animasyon otomatik oynar. Var olan hover/transition kurallarına dokunmuyor,
+           sadece öğe ilk göründüğünde ekstra bir "soft enter" efekti ekliyor. */
+        @keyframes softEnter {
+            from { opacity: 0; transform: translateY(14px) scale(0.97); }
+            to   { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
         .history-chip {
             background: rgba(255, 255, 255, 0.1);
             border: 1px solid rgba(255, 255, 255, 0.2);
@@ -174,6 +183,8 @@
             display: flex;
             align-items: center;
             gap: 8px;
+            animation: softEnter 0.35s ease both;
+            animation-delay: calc(var(--i, 0) * 40ms);
         }
 
         .history-chip:hover {
@@ -223,6 +234,8 @@
           text-align: left;
           transition: transform 0.3s, background 0.3s;
           box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+          animation: softEnter 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+          animation-delay: calc(var(--i, 0) * 45ms);
         }
         .card:hover { transform: translateY(-8px); background: rgba(30, 25, 60, 0.8); border-color: rgba(255, 179, 71, 0.3); }
         .card img { width: 100%; border-radius: 12px; margin-bottom: 12px; aspect-ratio: 1/1; object-fit: cover; }
@@ -257,11 +270,14 @@
 
 
         .playlist-bar { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; justify-content: center; width: 100%; }
-        .playlist-pill { display: flex; align-items: center; gap: 8px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); color: white; padding: 8px 16px; border-radius: 50px; cursor: pointer; font-size: 0.9rem; transition: 0.2s; }
+        .playlist-pill { display: flex; align-items: center; gap: 8px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); color: white; padding: 8px 16px; border-radius: 50px; cursor: pointer; font-size: 0.9rem; transition: 0.2s; animation: softEnter 0.3s ease both; animation-delay: calc(var(--i, 0) * 35ms); }
         .playlist-pill:hover { background: rgba(255,255,255,0.15); }
         .playlist-pill.active { background: linear-gradient(45deg, #D500F9, #FF4081); border-color: transparent; font-weight: bold; }
         .playlist-pill .playlist-delete-x { opacity: 0.6; padding: 0 2px; }
         .playlist-pill .playlist-delete-x:hover { opacity: 1; color: #ff5252; }
+        .playlist-pill .playlist-share-icon { opacity: 0.6; padding: 0 2px; font-size: 0.85rem; }
+        .playlist-pill .playlist-share-icon:hover { opacity: 1; transform: scale(1.15); }
+        .playlist-pill .playlist-share-icon.is-shared { opacity: 1; filter: drop-shadow(0 0 4px #D500F9); }
         .new-playlist-btn { border-style: dashed; opacity: 0.85; }
         .fav-search-box { width: 100%; max-width: 400px; margin-bottom: 20px; }
         .playlist-add-row { margin-top: 8px; }

@@ -47,6 +47,7 @@ public class PlaylistController {
                 m.put("id", p.getId());
                 m.put("name", p.getName());
                 m.put("songCount", playlistSongRepository.countByPlaylistIdAndOwnerId(p.getId(), ownerId));
+                m.put("shareToken", p.getShareToken()); // frontend liste zaten paylaşılıyor mu diye anlayabilsin
                 return m;
             }).collect(Collectors.toList());
 
@@ -169,6 +170,56 @@ public class PlaylistController {
         try {
             String ownerId = ownerResolver.resolve(authHeader, deviceId);
             playlistSongRepository.deleteByPlaylistIdAndSongIdAndOwnerId(playlistId, songId, ownerId);
+            return ResponseEntity.ok().build();
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(401).body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    // Bir listeyi link ile paylaşılabilir hale getirir.
+    // Liste zaten paylaşılıyorsa (shareToken varsa) AYNI token'ı döner — böylece daha önce
+    // dağıtılmış bir link, tekrar "Share" tıklanınca bozulmaz/değişmez.
+    @PostMapping("/{playlistId}/share")
+    public ResponseEntity<?> sharePlaylist(@PathVariable Long playlistId,
+                                            @RequestHeader(value = "Authorization", required = false) String authHeader,
+                                            @RequestHeader(value = "X-Device-Id", required = false) String deviceId) {
+        try {
+            String ownerId = ownerResolver.resolve(authHeader, deviceId);
+
+            Optional<Playlist> playlistOpt = playlistRepository.findByIdAndOwnerId(playlistId, ownerId);
+            if (playlistOpt.isEmpty()) {
+                return ResponseEntity.status(404).body(Map.of("error", "Liste bulunamadı."));
+            }
+
+            Playlist playlist = playlistOpt.get();
+            if (playlist.getShareToken() == null) {
+                playlist.setShareToken(UUID.randomUUID().toString());
+                playlistRepository.save(playlist);
+            }
+
+            return ResponseEntity.ok(Map.of("shareToken", playlist.getShareToken()));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(401).body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    // Paylaşımı iptal eder: token null'lanır, eski link artık hiçbir listeye çıkmaz
+    @DeleteMapping("/{playlistId}/share")
+    public ResponseEntity<?> unsharePlaylist(@PathVariable Long playlistId,
+                                              @RequestHeader(value = "Authorization", required = false) String authHeader,
+                                              @RequestHeader(value = "X-Device-Id", required = false) String deviceId) {
+        try {
+            String ownerId = ownerResolver.resolve(authHeader, deviceId);
+
+            Optional<Playlist> playlistOpt = playlistRepository.findByIdAndOwnerId(playlistId, ownerId);
+            if (playlistOpt.isEmpty()) {
+                return ResponseEntity.status(404).body(Map.of("error", "Liste bulunamadı."));
+            }
+
+            Playlist playlist = playlistOpt.get();
+            playlist.setShareToken(null);
+            playlistRepository.save(playlist);
+
             return ResponseEntity.ok().build();
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(401).body(Map.of("error", e.getMessage()));

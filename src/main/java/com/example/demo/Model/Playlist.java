@@ -22,6 +22,11 @@ public class Playlist {
 
     private LocalDateTime createdAt;
 
+    // Liste link ile paylaşıldığında üretilen benzersiz kod (UUID).
+    // null ise liste paylaşılmıyor demektir; paylaşım kaldırıldığında tekrar null yapılır.
+    @Column(length = 100, unique = true)
+    private String shareToken;
+
     public Playlist() {
     }
 
@@ -42,4 +47,7 @@ public class Playlist {
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+
+    public String getShareToken() { return shareToken; }
+    public void setShareToken(String shareToken) { this.shareToken = shareToken; }
 }

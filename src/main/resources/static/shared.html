@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Shared Playlist - HarmoJam</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+<div class="wave"></div><div class="wave"></div>
+<div class="glow glow-1"></div><div class="glow glow-2"></div>
+<div class="noise"></div>
+
+<div class="content-wrapper">
+    <h1 style="cursor: pointer;" onclick="window.location.href='index.html'">HarmoJam</h1>
+
+    <p class="tagline" id="sharedPlaylistTitle">Loading shared list...</p>
+
+    <div class="results-area show" id="sharedArea"></div>
+
+    <button class="action-btn recommend-btn" style="margin-top:30px; padding:12px 30px; max-width:220px;" onclick="window.location.href='index.html'">
+        Open HarmoJam
+    </button>
+</div>
+
+<script src="js/shared.js"></script>
+<div id="toast" class="toast"></div>
+</body>
+</html>
