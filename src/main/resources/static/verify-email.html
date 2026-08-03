@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Email Verification - HarmoJam</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+<div class="wave"></div><div class="wave"></div>
+<div class="glow glow-1"></div><div class="glow glow-2"></div>
+<div class="noise"></div>
+
+<div class="content-wrapper" style="justify-content:center; min-height:100vh;">
+    <h1 style="cursor: pointer; margin-bottom:30px;" onclick="window.location.href='index.html'">HarmoJam</h1>
+
+    <div class="verify-card" id="verifyCard">
+        <!-- JS ile dolduruluyor -->
+    </div>
+
+    <button class="action-btn recommend-btn" style="margin-top:30px; padding:12px 30px; max-width:220px;" onclick="window.location.href='index.html'">
+        Open HarmoJam
+    </button>
+</div>
+
+<script>
+    // Backend (/auth/verify-email) doğrulamayı zaten yaptı ve bizi buraya
+    // ?status=success ya da ?status=error ile yönlendirdi — burada sadece sonucu gösteriyoruz.
+    document.addEventListener('DOMContentLoaded', () => {
+        const params = new URLSearchParams(window.location.search);
+        const status = params.get('status');
+        const card = document.getElementById('verifyCard');
+
+        const isSuccess = status === 'success';
+
+        const iconSvg = isSuccess
+            ? `<svg viewBox="0 0 24 24" fill="none" stroke="#00e676" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>`
+            : `<svg viewBox="0 0 24 24" fill="none" stroke="#ff5252" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="13"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>`;
+
+        card.innerHTML = `
+            <div class="verify-icon-circle ${isSuccess ? 'success' : 'error'}">${iconSvg}</div>
+            <h2 class="verify-title ${isSuccess ? 'success' : 'error'}">
+                ${isSuccess ? 'Email Verified!' : 'Verification Failed'}
+            </h2>
+            <p class="verify-subtitle">
+                ${isSuccess
+                    ? 'Your email address has been successfully verified. You can safely close this tab and return to HarmoJam.'
+                    : 'This verification link is invalid or has expired. You can request a new one from your account page.'}
+            </p>
+        `;
+    });
+</script>
+</body>
+</html>

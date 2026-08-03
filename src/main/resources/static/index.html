@@ -61,6 +61,9 @@
                 <input id="authUsername" type="text" placeholder="Username" autocomplete="username"/>
             </div>
             <div class="search-box" style="max-width:400px;">
+                <input id="authEmail" type="email" placeholder="Email (only needed for Register)" autocomplete="email"/>
+            </div>
+            <div class="search-box" style="max-width:400px;">
                 <input id="authPassword" type="password" placeholder="Password" autocomplete="current-password"/>
             </div>
             <div style="display:flex; gap:10px; width:100%; max-width:400px;">
@@ -72,9 +75,18 @@
 
         <div id="accountLoggedIn" style="display:none; flex-direction:column; align-items:center; gap:16px;">
             <p style="font-size:1.2rem;">Logged in as <strong id="accountUsername"></strong></p>
+            <div id="emailVerifyBanner" style="display:none; background: rgba(255,196,0,0.12); border:1px solid rgba(255,196,0,0.4); border-radius:12px; padding:14px 20px; text-align:center; max-width:360px;">
+                <p style="margin:0 0 8px 0; font-size:0.9rem; color:#ffc400;">⚠ Please verify your email address.</p>
+                <button onclick="resendVerificationEmail()" class="clear-history-btn" style="text-decoration:underline; font-size:0.85rem;">Resend verification email</button>
+            </div>
             <button onclick="doLogout()" class="action-btn play-btn" style="padding:10px 30px;">Logout</button>
         </div>
     </div>
+</div>
+
+<div class="volume-control">
+    <svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
+    <input type="range" id="volumeSlider" min="0" max="100" value="70" oninput="setVolume(this.value)">
 </div>
 
 <script src="js/main.js"></script>

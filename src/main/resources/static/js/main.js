@@ -56,6 +56,17 @@
     const SEARCH_PAGE_SIZE = 12;
     let currentAudio = null;
     let currentBtn = null;
+    let currentVolume = parseFloat(localStorage.getItem('harmoJamVolume'));
+    if (isNaN(currentVolume)) currentVolume = 0.7;
+
+    function setVolume(percent) {
+        currentVolume = percent / 100;
+        localStorage.setItem('harmoJamVolume', currentVolume);
+        if (currentAudio) {
+            currentAudio.volume = currentVolume;
+        }
+    }
+
     let favoriteSongIds = new Set();
 
     // HTML Elementleri
@@ -68,24 +79,30 @@
 
     // Hesap ekranı elementleri
     const authUsernameInput = document.getElementById('authUsername');
+    const authEmailInput = document.getElementById('authEmail');
     const authPasswordInput = document.getElementById('authPassword');
     const authError = document.getElementById('authError');
     const accountLoggedOut = document.getElementById('accountLoggedOut');
     const accountLoggedIn = document.getElementById('accountLoggedIn');
     const accountUsername = document.getElementById('accountUsername');
+    const emailVerifyBanner = document.getElementById('emailVerifyBanner');
 
     function doRegister() {
         authError.innerText = '';
         fetch(`${API_URL}/auth/register`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username: authUsernameInput.value.trim(), password: authPasswordInput.value })
+            body: JSON.stringify({
+                username: authUsernameInput.value.trim(),
+                email: authEmailInput.value.trim(),
+                password: authPasswordInput.value
+            })
         })
         .then(async res => {
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || 'Registration failed');
             setAuthToken(data.token);
-            onLoginSuccess(data.username);
+            onLoginSuccess(data.username, data.emailVerified);
         })
         .catch(err => { authError.innerText = err.message; });
     }
@@ -101,7 +118,7 @@
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || 'Login failed');
             setAuthToken(data.token);
-            onLoginSuccess(data.username);
+            onLoginSuccess(data.username, data.emailVerified);
         })
         .catch(err => { authError.innerText = err.message; });
     }
@@ -109,22 +126,94 @@
     function doLogout() {
         clearAuthToken();
         clearAuthUsername();
+        stopEmailVerifyPolling();
         accountLoggedIn.style.display = 'none';
         accountLoggedOut.style.display = 'flex';
         authUsernameInput.value = '';
+        authEmailInput.value = '';
         authPasswordInput.value = '';
         refreshFavoriteIds(); // favori listesini tekrar misafir kimliğine göre tazele
         renderHistory();
     }
 
-    function onLoginSuccess(username) {
+    function onLoginSuccess(username, emailVerified) {
         accountUsername.innerText = username;
         accountLoggedOut.style.display = 'none';
         accountLoggedIn.style.display = 'flex';
+        emailVerifyBanner.style.display = emailVerified ? 'none' : 'block';
         setAuthUsername(username);
         refreshFavoriteIds(); // favori listesini üyenin kendi verisine göre tazele
         renderHistory();
+
+        // Doğrulanmamışsa, kullanıcı linke başka bir sekmede tıklayıp buraya dönerse
+        // uyarı sayfa yenilenmeden otomatik kalksın diye periyodik kontrol başlat.
+        if (emailVerified) {
+            stopEmailVerifyPolling();
+        } else {
+            startEmailVerifyPolling();
+        }
     }
+
+    // "Resend verification email" butonuna basılınca çağrılır (şu an test modunda backend
+    // konsola/log'a yazıyor — gerçek mail göndermiyor)
+    function resendVerificationEmail() {
+        fetch(`${API_URL}/auth/resend-verification`, {
+            method: 'POST',
+            headers: getAuthHeaders()
+        })
+        .then(async res => {
+            if (!res.ok) {
+                const data = await res.json().catch(() => ({}));
+                throw new Error(data.error || 'Could not resend verification email.');
+            }
+            showToast('Verification email sent — check your inbox.');
+        })
+        .catch(err => showToast(err.message, true));
+    }
+
+    // --- E-POSTA DOĞRULAMA DURUMUNU CANLI TAKİP ---
+    // Kullanıcı doğrulama linkini genelde BAŞKA bir sekmede/pencerede açıyor
+    // (konsoldan kopyaladığı link). Bu sekmedeki uyarı banner'ının, sayfa hiç
+    // yenilenmeden kendiliğinden kalkması için: (1) periyodik olarak /auth/me'yi
+    // yokluyoruz, (2) kullanıcı bu sekmeye geri dönünce (focus) hemen bir kontrol
+    // daha yapıyoruz — ikisi birbirini tamamlıyor.
+    let emailVerifyPollInterval = null;
+
+    function startEmailVerifyPolling() {
+        stopEmailVerifyPolling();
+        emailVerifyPollInterval = setInterval(checkEmailVerificationStatus, 8000);
+    }
+
+    function stopEmailVerifyPolling() {
+        if (emailVerifyPollInterval) {
+            clearInterval(emailVerifyPollInterval);
+            emailVerifyPollInterval = null;
+        }
+    }
+
+    function checkEmailVerificationStatus() {
+        const token = getAuthToken();
+        if (!token) { stopEmailVerifyPolling(); return; }
+
+        fetch(`${API_URL}/auth/me`, { headers: { 'Authorization': 'Bearer ' + token } })
+            .then(res => res.ok ? res.json() : Promise.reject())
+            .then(data => {
+                if (data.emailVerified) {
+                    emailVerifyBanner.style.display = 'none';
+                    stopEmailVerifyPolling();
+                    showToast('✅ Your email has been verified!');
+                }
+            })
+            .catch(() => {}); // sessizce geç, bir sonraki denemede tekrar bakılır
+    }
+
+    // Kullanıcı sekmeye geri dönünce (ör. doğrulama linkini başka sekmede açtıktan sonra)
+    // banner hâlâ görünüyorsa hemen bir kontrol tetikle — 8 saniyelik polling'i beklemeden.
+    window.addEventListener('focus', () => {
+        if (emailVerifyBanner && emailVerifyBanner.style.display !== 'none') {
+            checkEmailVerificationStatus();
+        }
+    });
 
     // Sayfa yenilendiğinde localStorage'daki token hâlâ geçerli mi diye kontrol eder.
     function checkExistingSession() {
@@ -134,7 +223,7 @@
             .then(async res => {
                 if (!res.ok) { clearAuthToken(); return; }
                 const data = await res.json();
-                onLoginSuccess(data.username);
+                onLoginSuccess(data.username, data.emailVerified);
             })
             .catch(() => clearAuthToken());
     }
@@ -144,6 +233,9 @@
         checkExistingSession();
         refreshFavoriteIds();
         renderHistory();
+
+        const volumeSlider = document.getElementById('volumeSlider');
+        if (volumeSlider) volumeSlider.value = Math.round(currentVolume * 100);
     });
 
     // --- 1. FONKSİYON: MÜZİK ARAMA ---
@@ -508,11 +600,22 @@
         const bar = document.getElementById('playlistBar');
         let html = `<button class="playlist-pill ${currentPlaylistId === null ? 'active' : ''}" onclick="selectPlaylist(null)">VAULT</button>`;//Favorites
 
+//        userPlaylists.forEach((p, pillIndex) => {
+//            const safeName = (p.name || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+//            html += `
+//                <div class="playlist-pill ${currentPlaylistId === p.id ? 'active' : ''}" style="--i:${pillIndex}">
+//                    <span onclick="selectPlaylist(${p.id})">${p.name} (${p.songCount})</span>
+//                    <span class="playlist-share-icon ${p.shareToken ? 'is-shared' : ''}"
+//                          onclick="event.stopPropagation(); sharePlaylist(${p.id})"
+//                          title="${p.shareToken ? 'Copy share link' : 'Share this list'}">🔗</span>
+//                    <span class="playlist-delete-x" onclick="event.stopPropagation(); deletePlaylistPrompt(${p.id}, '${safeName}')">✕</span>
+//                </div>`;
+//        });
         userPlaylists.forEach((p, pillIndex) => {
             const safeName = (p.name || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
             html += `
-                <div class="playlist-pill ${currentPlaylistId === p.id ? 'active' : ''}" style="--i:${pillIndex}">
-                    <span onclick="selectPlaylist(${p.id})">${p.name} (${p.songCount})</span>
+                <div class="playlist-pill ${currentPlaylistId === p.id ? 'active' : ''}" style="--i:${pillIndex}" onclick="selectPlaylist(${p.id})">
+                    <span>${p.name} (${p.songCount})</span>
                     <span class="playlist-share-icon ${p.shareToken ? 'is-shared' : ''}"
                           onclick="event.stopPropagation(); sharePlaylist(${p.id})"
                           title="${p.shareToken ? 'Copy share link' : 'Share this list'}">🔗</span>
@@ -637,11 +740,16 @@
             }
             return;
         }
+
+        const words = term.split(/\s+/).filter(Boolean);
+
         const filtered = currentFavoritesData.filter(s => {
             const name = (s.isim || '').toLocaleLowerCase('tr');
             const artist = (s.sarkici || '').toLocaleLowerCase('tr');
-            return name.includes(term) || artist.includes(term);
+            const combined = name + ' ' + artist;
+            return words.every(word => combined.includes(word));
         });
+
         if (filtered.length === 0) {
             favoritesArea.innerHTML = '<div class="result-placeholder">No matches in this list.</div>';
         } else {
@@ -682,6 +790,7 @@
         } else {
             if (currentAudio) { currentAudio.pause(); if (currentBtn) currentBtn.innerHTML = "▶ Play"; }
             currentAudio = new Audio(url);
+            currentAudio.volume = currentVolume;
             currentAudio.play();
             currentBtn = btn;
             btn.innerHTML = "⏸ Stop";

@@ -16,6 +16,14 @@ public class AppUser {
     @Column(nullable = false, unique = true, length = 50)
     private String username;
 
+    @Column(nullable = false, unique = true, length = 255)
+    private String email;
+
+    // Kullanıcı, e-postasındaki (test modunda: konsoldaki) doğrulama linkine tıklayınca true olur.
+    // Giriş bunu ENGELLEMİYOR — sadece frontend'de "e-postanı doğrula" uyarısı göstermek için kullanılıyor.
+    @Column(nullable = false)
+    private boolean emailVerified = false;
+
     @Column(nullable = false)
     private String passwordHash;
 
@@ -25,8 +33,9 @@ public class AppUser {
     public AppUser() {
     }
 
-    public AppUser(String username, String passwordHash) {
+    public AppUser(String username, String email, String passwordHash) {
         this.username = username;
+        this.email = email;
         this.passwordHash = passwordHash;
         this.createdAt = LocalDateTime.now();
     }
@@ -36,6 +45,12 @@ public class AppUser {
 
     public String getUsername() { return username; }
     public void setUsername(String username) { this.username = username; }
+
+    public String getEmail() { return email; }
+    public void setEmail(String email) { this.email = email; }
+
+    public boolean isEmailVerified() { return emailVerified; }
+    public void setEmailVerified(boolean emailVerified) { this.emailVerified = emailVerified; }
 
     public String getPasswordHash() { return passwordHash; }
     public void setPasswordHash(String passwordHash) { this.passwordHash = passwordHash; }
