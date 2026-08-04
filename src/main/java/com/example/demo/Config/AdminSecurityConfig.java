@@ -14,17 +14,7 @@ import org.springframework.context.annotation.Configuration;
 
 import java.io.IOException;
 
-// Admin istatistiklerini (/api/admin/**) korumak için basit ama etkili bir katman.
-// Projede henüz tam bir Spring Security kurulumu olmadığı için, mevcut kod stiline
-// (AuthService/OwnerResolverService'deki gibi basit token mantığı) uygun, hafif bir
-// "paylaşılan anahtar" (shared secret) filtresi kullanıyoruz.
-//
-// Nasıl çalışır:
-// - Render/İsteğe göre ortam değişkeni olarak ADMIN_SECRET_KEY tanımlanır.
-// - /api/admin/** altındaki her istekte "X-Admin-Key" header'ı bu değere eşit olmalı.
-// - ADMIN_SECRET_KEY tanımlı DEĞİLSE, güvenlik açığı olmasın diye admin paneline
-//   erişim TAMAMEN kapatılır (fail-closed) — yani "unutulmuş konfigürasyon" asla
-//   "herkese açık admin paneli" anlamına gelmez.
+
 @Configuration
 public class AdminSecurityConfig {
 

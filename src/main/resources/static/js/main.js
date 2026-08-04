@@ -274,6 +274,10 @@
         //const safeQuery = encodeURIComponent(query.trim());
         //fetch(`${API_URL}/search?q=${safeQuery}`)
 
+        let detectedGenre = null;
+        let detectedYearFrom = null;
+        let detectedYearTo = null;
+
         fetch(`${API_URL}/search`, {
             method: 'POST',
             body: query,  // Direkt string olarak gönderiyoruz
@@ -282,7 +286,14 @@
             }
         })
 
-            .then(response => response.json())
+            .then(response => {
+                // Backend "1980'lerin rock müzikleri" gibi ifadelerden algıladığı
+                // yıl aralığı / tür bilgisini bu header'larla gönderiyor.
+                detectedGenre = response.headers.get('X-Detected-Genre');
+                detectedYearFrom = response.headers.get('X-Detected-Year-From');
+                detectedYearTo = response.headers.get('X-Detected-Year-To');
+                return response.json();
+            })
             .then(data => {
                 data.forEach(song => {
                     if (!song.id) {
@@ -295,10 +306,16 @@
                 lastSearchResults = data;
                 renderCards(data, 'search');
 
+                // Algılanan filtreleri kullanıcıya küçük bir ipucu olarak gösteriyoruz
+                let detectedParts = [];
+                if (detectedYearFrom) detectedParts.push(`${detectedYearFrom}-${detectedYearTo}`);
+                if (detectedGenre) detectedParts.push(detectedGenre);
+                const detectedHint = detectedParts.length > 0 ? ` (detected: ${detectedParts.join(' · ')})` : '';
+
                 if (data.length === 0) {
-                     statusText.innerText = `No results found for "${query}"`;
+                     statusText.innerText = `No results found for "${query}"${detectedHint}`;
                 } else {
-                     statusText.innerText = `Results for "${query}"`;
+                     statusText.innerText = `Results for "${query}"${detectedHint}`;
                 }
                 // Tam bir sayfa (12) dolu geldiyse muhtemelen daha fazla sonuç vardır
                 document.getElementById('loadMoreBtn').style.display = (data.length === SEARCH_PAGE_SIZE) ? 'block' : 'none';//
