@@ -26,18 +26,25 @@ public class    Song {//değişkenler
     private String resimUrl;
     @Column(length = 2048)
     private String muzikUrl;
+    @Column (length = 2048)
+    private String spotifyUrl;
+
 
     public Song() {
     }
 
-    public Song(String id, String isim, String sarkici, String resimUrl, String muzikUrl) {
+    public Song(String id, String isim, String sarkici, String resimUrl, String muzikUrl,String spotifyUrl) {
         this.id = id;
         this.isim = isim;
         this.sarkici = sarkici;
         this.resimUrl = resimUrl;
         this.muzikUrl = muzikUrl;
+        this.spotifyUrl = spotifyUrl;
         //Constructor
     }
+
+//    public Song(String id, String isim, String sarkici, String resimUrl, String muzikUrl, String spotifyUrl) {
+//    }
 
     //erişim metotları Getters
     //değişkenler private olduğundan frontendin verileri erişmesi için açık kapı bırakıyoruz getter
@@ -61,5 +68,8 @@ public class    Song {//değişkenler
 
     public java.time.LocalDateTime getAddedAt() { return addedAt;}
     public void setAddedAt(java.time.LocalDateTime addedAt) {this.addedAt = addedAt;}
+
+    public String getSpotifyUrl(){return spotifyUrl;}
+    public void setSpotifyUrl(String spotifyUrl){this.spotifyUrl = spotifyUrl;}
 
 }

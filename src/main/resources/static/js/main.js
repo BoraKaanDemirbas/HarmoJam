@@ -233,9 +233,21 @@
         checkExistingSession();
         refreshFavoriteIds();
         renderHistory();
+        checkSpotifyStatus();
 
         const volumeSlider = document.getElementById('volumeSlider');
         if (volumeSlider) volumeSlider.value = Math.round(currentVolume * 100);
+
+        const params = new URLSearchParams(window.location.search);
+            if (params.has('spotifyConnected')) {
+                if (params.get('spotifyConnected') === '1') {
+                    showToast("Spotify connected!");
+                } else {
+                    showToast("Spotify connection failed.", true);
+                }
+                history.replaceState(null, '', window.location.pathname);
+                checkSpotifyStatus();
+            }
     });
 
     // --- 1. FONKSİYON: MÜZİK ARAMA ---
@@ -400,6 +412,10 @@
                 const safeUrl = sarki.muzikUrl.replace(/'/g, "\\'");
                 playBtnHtml = `<button class="action-btn play-btn" onclick="togglePlay(this, '${safeUrl}', '${sarki.id}', '${safeName}', '${safeArtist}')">▶ Play</button>`;
             }
+            let spotifyLinkHtml = "";
+            if (sarki.spotifyUrl) {
+                spotifyLinkHtml = `<button class="action-btn spotify-link-btn" onclick="window.open('${sarki.spotifyUrl}', '_blank')" title="Open in Spotify">🔗</button>`;
+            }
 
             // Favori Butonu Mantığı
             const isFav = favoriteSongIds.has(sarki.id);
@@ -436,6 +452,19 @@
                 }
             }
 
+            let spotifyBtnHtml = "";
+            if (sarki.spotifyUrl && sarki.spotifyUrl !== "null" && sarki.spotifyUrl.trim() !== "") {
+                const safeSpotifyUrl = sarki.spotifyUrl.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                spotifyBtnHtml = `
+                    <a href="${safeSpotifyUrl}" target="_blank" title="Spotify'da Aç" class="action-btn"
+                       style="background-color: #1DB954; color: white; border: none; display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 50%; padding: 0; margin-left: 5px;">
+                        <svg width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
+                          <path d="M8 0a8 8 0 1 0 0 16A8 8 0 0 0 8 0zm3.669 11.538a.498.498 0 0 1-.686.165c-1.879-1.147-4.243-1.407-7.028-.77a.499.499 0 0 1-.222-.973c3.048-.696 5.662-.397 7.77.892a.5.5 0 0 1 .166.686zm.979-2.178a.624.624 0 0 1-.858.205c-2.15-1.321-5.428-1.704-7.972-.932a.625.625 0 0 1-.362-1.194c2.905-.881 6.517-.454 8.986 1.063a.624.624 0 0 1 .206.858zm.084-2.268C10.154 5.56 5.9 5.419 3.438 6.166a.748.748 0 1 1-.434-1.432c2.825-.857 7.523-.692 10.492 1.07a.747.747 0 1 1-.764 1.288z"/>
+                        </svg>
+                    </a>`;
+            }
+
+
             // Listeye ekleme menüsü: sadece favoriler ekranında ve en az bir özel liste varsa göster
             let playlistAddHtml = "";
             if (mode === 'favorites' && userPlaylists.length > 0) {
@@ -461,6 +490,7 @@
                     <div class="card-actions">
                         ${playBtnHtml}
                         ${favBtnHtml}
+                        ${spotifyLinkHtml}
                     </div>
                     <button onclick="oneriGetir('${safeName}', '${safeArtist}')" class="action-btn recommend-btn" style="margin-top:10px;">
                         Mix
@@ -598,7 +628,11 @@
 
     function renderPlaylistBar() {
         const bar = document.getElementById('playlistBar');
-        let html = `<button class="playlist-pill ${currentPlaylistId === null ? 'active' : ''}" onclick="selectPlaylist(null)">VAULT</button>`;//Favorites
+        let html = `
+            <div class="playlist-pill ${currentPlaylistId === null ? 'active' : ''}" onclick="selectPlaylist(null)">
+                <span>VAULT</span>
+                <span class="playlist-export-icon" onclick="event.stopPropagation(); exportToSpotify(null)" title="Export to Spotify">⬆</span>
+            </div>`;//Favorites
 
 //        userPlaylists.forEach((p, pillIndex) => {
 //            const safeName = (p.name || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
@@ -620,6 +654,7 @@
                           onclick="event.stopPropagation(); sharePlaylist(${p.id})"
                           title="${p.shareToken ? 'Copy share link' : 'Share this list'}">🔗</span>
                     <span class="playlist-delete-x" onclick="event.stopPropagation(); deletePlaylistPrompt(${p.id}, '${safeName}')">✕</span>
+                    <span class="playlist-export-icon" onclick="event.stopPropagation(); exportToSpotify(${p.id})" title="Export to Spotify">⬆</span>
                 </div>`;
         });
 
@@ -899,3 +934,55 @@
         showSearch();
     }
 
+    function connectSpotify() {
+        const token = getAuthToken();
+        const params = new URLSearchParams();
+        if (token) params.set('authToken', token);
+        else params.set('deviceId', getDeviceId());
+        window.location.href = `${API_URL}/spotify-export/login?${params.toString()}`;
+    }
+
+    function checkSpotifyStatus() {
+        fetch(`${API_URL}/spotify-export/status`, { headers: getAuthHeaders() })
+            .then(res => res.json())
+            .then(data => {
+                const btn = document.getElementById('spotifyConnectBtn');
+                const text = document.getElementById('spotifyStatusText');
+                if (!btn || !text) return;
+                if (data.connected) {
+                    text.innerText = "Spotify account connected ✓";
+                    btn.innerText = "Disconnect";
+                    btn.onclick = disconnectSpotify;
+                } else {
+                    text.innerText = "Export your lists straight to Spotify.";
+                    btn.innerText = "Connect Spotify";
+                    btn.onclick = connectSpotify;
+                }
+            })
+            .catch(err => console.error("Spotify status error:", err));
+    }
+
+    function disconnectSpotify() {
+        fetch(`${API_URL}/spotify-export/disconnect`, { method: 'POST', headers: getAuthHeaders() })
+            .then(() => checkSpotifyStatus());
+    }
+
+    function exportToSpotify(playlistId) {
+        const endpoint = playlistId
+            ? `${API_URL}/spotify-export/playlists/${playlistId}`
+            : `${API_URL}/spotify-export/favorites`;
+
+        showToast("Exporting to Spotify...");
+
+        fetch(endpoint, { method: 'POST', headers: getAuthHeaders() })
+            .then(async res => {
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || 'Export failed');
+                const skippedMsg = data.skipped > 0 ? ` (${data.skipped} skipped, no Spotify link)` : '';
+                showToast(`Exported ${data.exported} songs!${skippedMsg}`);
+                window.open(data.spotifyPlaylistUrl, '_blank');
+            })
+            .catch(err => {
+                showToast(err.message.includes('bağlı değil') ? "Connect your Spotify account first (Account tab)." : err.message, true);
+            });
+    }

@@ -62,8 +62,9 @@ public class SpotifyService {
                 String sarkici = item.path("artists").get(0).path("name").asText();
                 String resimUrl = item.path("album").path("images").get(0).path("url").asText();
                 String muzikUrl = item.path("preview_url").asText();
+                String spotifyUrl = item.path("external_urls").path("spotify").asText(null);
 
-                sarkiListesi.add(new Song(id, isim, sarkici, resimUrl, muzikUrl));
+                sarkiListesi.add(new Song(id, isim, sarkici, resimUrl, muzikUrl,spotifyUrl));
             }
         }catch (Exception e){
             e.printStackTrace();

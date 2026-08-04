@@ -45,7 +45,8 @@ public class DeezerService {
                 String muzikUrl = songData.path("preview").asText();
 
                 System.out.println("EKLENDİ: " + isim + " - " + sarkici);//terminal Kontrol
-                return new Song(id, isim, sarkici, resimUrl, muzikUrl);//istenilen verileri listeleyerek döndürüyoruz
+                return new Song(id, isim, sarkici, resimUrl, muzikUrl,null);//istenilen verileri listeleyerek
+                 // döndürüyoruz
             }
 
 

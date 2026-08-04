@@ -401,3 +401,9 @@
         .verify-title.success { color: #00e676; }
         .verify-title.error { color: #ff5252; }
         .verify-subtitle { font-size: 0.95rem; color: #cfcde0; margin: 4px 0 10px 0; line-height: 1.5; }
+
+        .spotify-link-btn { flex: 0 0 auto; width: 40px; background: rgba(29,185,84,0.15); border: 1px solid rgba(29,185,84,0.4); }
+        .spotify-link-btn:hover { background: rgba(29,185,84,0.3); }
+
+        .playlist-export-icon { opacity: 0.6; padding: 0 2px; }
+        .playlist-export-icon:hover { opacity: 1; color: #1DB954; }
