@@ -2,6 +2,7 @@ package com.example.demo.Service;
 
 import com.example.demo.Model.Song;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -24,6 +25,12 @@ public class MusicManagerService {
 
     // bu da 10+ şarkı için toplamda saniyelerce sürüyordu. Artık hepsi aynı anda gidiyor.
     private final ExecutorService deezerExecutor = Executors.newFixedThreadPool(10);
+
+    @Cacheable(
+            value = "searchResults",
+            key = "#query.toLowerCase() + '_' + #offset",
+            unless = "#result == null || #result.isEmpty()"   // boş/hatalı sonucu cache'leme
+    )
 
 
     //arama metodu
@@ -53,6 +60,12 @@ public class MusicManagerService {
 
         return spotifySongs;
     }
+
+    @Cacheable(
+            value = "recommendations",
+            key = "#trackName.toLowerCase() + '_' + #artistName.toLowerCase()",
+            unless = "#result == null || #result.isEmpty()"
+    )
 
     public List<Song> getRecommendation(String trackName, String artistName) {
         List<String[]> similarTracks = lastFmService.getRecommendation(trackName, artistName);
