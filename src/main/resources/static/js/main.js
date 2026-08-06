@@ -427,7 +427,7 @@
             let playBtnHtml = `<button class="action-btn play-btn" disabled style="opacity:0.5">No Audio</button>`;
             if (sarki.muzikUrl && sarki.muzikUrl !== "null") {
                 const safeUrl = sarki.muzikUrl.replace(/'/g, "\\'");
-                playBtnHtml = `<button class="action-btn play-btn" onclick="togglePlay(this, '${safeUrl}', '${sarki.id}', '${safeName}', '${safeArtist}')">▶ Play</button>`;
+                playBtnHtml = `<button class="action-btn play-btn" data-audio-trigger="true" onclick="togglePlay(this, '${safeUrl}', '${sarki.id}', '${safeName}', '${safeArtist}')">▶ Play</button>`;
             }
             let spotifyLinkHtml = "";
             if (sarki.spotifyUrl) {
@@ -835,21 +835,96 @@
             });
     }
 
+//    function togglePlay(btn, url, songId, isim, sarkici) {
+//        if (currentAudio && currentAudio.src === url) {
+//            if (currentAudio.paused) { currentAudio.play(); btn.innerHTML = "⏸ Stop"; }
+//            else { currentAudio.pause(); btn.innerHTML = "▶ Play"; }
+//        } else {
+//            if (currentAudio) { currentAudio.pause(); if (currentBtn) currentBtn.innerHTML = "▶ Play"; }
+//            currentAudio = new Audio(url);
+//            currentAudio.volume = currentVolume;
+//            currentAudio.play();
+//            currentBtn = btn;
+//            btn.innerHTML = "⏸ Stop";
+//            currentAudio.onended = function() { btn.innerHTML = "▶ Play"; };
+//            logPlay(songId, isim, sarkici);
+//        }
+//    }
+
     function togglePlay(btn, url, songId, isim, sarkici) {
+        const volumeControl = document.querySelector('.volume-control');
+
         if (currentAudio && currentAudio.src === url) {
-            if (currentAudio.paused) { currentAudio.play(); btn.innerHTML = "⏸ Stop"; }
-            else { currentAudio.pause(); btn.innerHTML = "▶ Play"; }
+            if (currentAudio.paused) {
+                currentAudio.play();
+                btn.innerHTML = "⏸ Stop";
+                volumeControl.classList.add('visible');
+            } else {
+                currentAudio.pause();
+                btn.innerHTML = "▶ Play";
+                volumeControl.classList.remove('visible');
+            }
         } else {
             if (currentAudio) { currentAudio.pause(); if (currentBtn) currentBtn.innerHTML = "▶ Play"; }
             currentAudio = new Audio(url);
             currentAudio.volume = currentVolume;
-            currentAudio.play();
+//            currentAudio.play();
             currentBtn = btn;
             btn.innerHTML = "⏸ Stop";
-            currentAudio.onended = function() { btn.innerHTML = "▶ Play"; };
-            logPlay(songId, isim, sarkici);
+            volumeControl.classList.add('visible');
+            currentAudio.onended = function() {
+                btn.innerHTML = "▶ Play";
+                volumeControl.classList.remove('visible');
+            };
+            currentAudio.play().then(() => {
+                logPlay(songId, isim, sarkici);      // sadece gerçekten çalmaya başlarsa logla
+            }).catch(err => {
+                console.error("Playback failed for", url, err);
+                btn.innerHTML = "▶ Play";
+                btn.disabled = true;
+                btn.style.opacity = "0.5";
+                btn.innerText = "No Audio";
+                volumeControl.classList.remove('visible');
+                if (typeof showToast === 'function') {
+                    showToast("This preview is unavailable.", true);
+                }
+            });
+
         }
     }
+
+    let volumeHideTimeout;
+    const volumeControlEl = document.querySelector('.volume-control');
+    const volumeHoverZoneEl = document.querySelector('.volume-hover-zone');
+
+    function showVolumeControlTemporarily() {
+        volumeControlEl.classList.add('visible');
+        clearTimeout(volumeHideTimeout);
+        volumeHideTimeout = setTimeout(() => {
+            volumeControlEl.classList.remove('visible');
+        }, 2500); // imleç uzaklaştıktan 2.5 saniye sonra kaybolur
+    }
+
+    // Sağ alt köşeye yaklaşınca göster
+    volumeHoverZoneEl.addEventListener('mouseenter', showVolumeControlTemporarily);
+
+    // Kontrolün üzerindeyken (slider'ı sürüklerken) süre dolup kaybolmasın
+    volumeControlEl.addEventListener('mouseenter', () => clearTimeout(volumeHideTimeout));
+    volumeControlEl.addEventListener('mouseleave', () => {
+        volumeHideTimeout = setTimeout(() => {
+            volumeControlEl.classList.remove('visible');
+        }, 2500);
+    });
+
+    // Play butonlarının üzerine gelince de göster (dinamik olarak renderCards ile
+    // oluşturuldukları için event delegation kullanıyoruz — tek listener, her karta ayrı eklemeye gerek yok)
+    document.addEventListener('mouseover', function (e) {
+        if (e.target.closest('[data-audio-trigger]')) {
+            showVolumeControlTemporarily();
+        }
+    });
+
+
 
     // Preview çalma istatistiği için backend'e log at
     function logPlay(songId, isim, sarkici) {

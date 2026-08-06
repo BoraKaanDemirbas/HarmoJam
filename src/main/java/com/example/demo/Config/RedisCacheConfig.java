@@ -25,12 +25,15 @@ import java.time.Duration;
 
 @Configuration
 @EnableCaching
-public class RedisCacheConfig implements CachingConfigurer {
+public class  RedisCacheConfig implements CachingConfigurer {
 
     private static final Logger log = LoggerFactory.getLogger(RedisCacheConfig.class);
 
     @Value("${app.cache.search-ttl-minutes:360}")
     private long searchTtlMinutes;
+
+    @Value("${app.cache.music-ttl-minutes:30}")
+    private long musicTtlMinutes;
 
     @Bean
     public CacheManager cacheManager(RedisConnectionFactory connectionFactory) {
@@ -48,8 +51,12 @@ public class RedisCacheConfig implements CachingConfigurer {
                 .serializeKeysWith(RedisSerializationContext.SerializationPair.fromSerializer(new StringRedisSerializer()))
                 .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(jsonSerializer));
 
+        RedisCacheConfiguration musicConfig = defaultConfig.entryTtl(Duration.ofMinutes(musicTtlMinutes));
+
         return RedisCacheManager.builder(connectionFactory)
                 .cacheDefaults(defaultConfig)
+                .withCacheConfiguration("searchResults", musicConfig)
+                .withCacheConfiguration("recommendations", musicConfig)
                 .build();
     }
 

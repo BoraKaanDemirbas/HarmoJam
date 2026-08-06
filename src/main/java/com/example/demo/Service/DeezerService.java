@@ -44,6 +44,13 @@ public class DeezerService {
                 String resimUrl = songData.path("album").path("cover_medium").asText();
                 String muzikUrl = songData.path("preview").asText();
 
+                long nowEpoch = System.currentTimeMillis() / 1000;
+                java.util.regex.Matcher expMatcher = java.util.regex.Pattern.compile("exp=(\\d+)").matcher(muzikUrl);
+                if (expMatcher.find()) {
+                    long exp = Long.parseLong(expMatcher.group(1));
+                    System.out.println("DEEZER PREVIEW: şimdi=" + nowEpoch + " exp=" + exp + " kalan_saniye=" + (exp - nowEpoch));
+                }
+
                 System.out.println("EKLENDİ: " + isim + " - " + sarkici);//terminal Kontrol
                 return new Song(id, isim, sarkici, resimUrl, muzikUrl,null);//istenilen verileri listeleyerek
                  // döndürüyoruz

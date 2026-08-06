@@ -407,3 +407,37 @@
 
         .playlist-export-icon { opacity: 0.6; padding: 0 2px; }
         .playlist-export-icon:hover { opacity: 1; color: #1DB954; }
+
+        .volume-control {
+            /* mevcut kurallar aynı kalıyor, sadece şunları ekle: */
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+        .volume-control.visible {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .volume-control {
+            /* mevcut kurallar aynı kalıyor */
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.6s ease;   /* "yumuşak, birkaç saniyede" kaybolma hissi için 0.3s'den 0.6s'ye çıkardım */
+        }
+        .volume-control.visible {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        /* Sağ alt köşede, ikonun kendisinden daha geniş görünmez bir "algılama alanı".
+           Kullanıcı tam ikonun üstüne değil, o köşeye yaklaşınca bile tetiklensin diye. */
+        .volume-hover-zone {
+            position: fixed;
+            bottom: 0;
+            right: 0;
+            width: 180px;
+            height: 180px;
+            z-index: 499; /* volume-control'un (z-index: 500) hemen altında */
+        }
+

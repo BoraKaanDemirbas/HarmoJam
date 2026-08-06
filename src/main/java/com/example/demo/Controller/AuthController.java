@@ -5,6 +5,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.slf4j.Logger; import org.slf4j.LoggerFactory;
 
 import java.net.URI;
 import java.util.HashMap;
@@ -14,6 +15,8 @@ import java.util.Map;
 @RequestMapping("/auth")
 @CrossOrigin(origins = "*", allowedHeaders = "*")
 public class AuthController {
+
+    private static final Logger logger = LoggerFactory.getLogger(AuthController.class);
 
     @Autowired
     private AuthService authService;
@@ -59,8 +62,16 @@ public class AuthController {
     // Sonucu frontend'deki verify-email.html sayfasına yönlendirerek gösteriyoruz,
     // böylece kullanıcı çıplak bir JSON yerine sitenin temasında bir sonuç ekranı görüyor.
     @GetMapping("/verify-email")
-    public ResponseEntity<?> verifyEmail(@RequestParam String token) {
-        boolean success = authService.verifyEmail(token);
+    public ResponseEntity<?> verifyEmail(@RequestParam String token){
+        boolean success;
+        try {
+            success = authService.verifyEmail(token);
+
+        }catch (Exception e){
+            logger.error("E-posta doğrulama sırasında beklenmedik hata (token={}): {}", token, e.getMessage(), e);
+            success=false;
+
+        }
         String redirectUrl = success ? "/verify-email.html?status=success" : "/verify-email.html?status=error";
         return ResponseEntity.status(HttpStatus.FOUND)
                 .location(URI.create(redirectUrl))

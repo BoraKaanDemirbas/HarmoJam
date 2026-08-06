@@ -141,6 +141,12 @@
             text-align: center;
         }
 
+        .tab-btn {
+            background: #1f1d36; border: 1px solid #3d3b5a; color: #cfcde0;
+            padding: 8px 18px; border-radius: 8px; cursor: pointer;
+        }
+        .tab-btn.active { background: #ff7eb3; color: #1a1a2e; font-weight: bold; }
+
     </style>
 </head>
 <body>
@@ -185,6 +191,42 @@
         </div>
     </div>
 
+
+    <div class="tab-bar" style="display:flex; gap:10px; margin-bottom:25px;">
+        <button class="tab-btn active" onclick="showTab('stats')">İstatistikler</button>
+        <button class="tab-btn" onclick="showTab('users')">Kullanıcılar</button>
+        <button class="tab-btn" onclick="showTab('cache')">Cache</button>
+    </div>
+
+    <div id="tab-stats"><!-- mevcut stats-container + charts-grid buraya taşınıyor --></div>
+
+    <div id="tab-users" style="display:none;">
+        <table id="usersTable" style="width:100%; border-collapse:collapse; color:#fff;">
+            <thead>
+            <tr style="text-align:left; border-bottom:1px solid #3d3b5a;">
+                <th style="padding:10px;">Kullanıcı</th>
+                <th style="padding:10px;">E-posta</th>
+                <th style="padding:10px;">Durum</th>
+                <th style="padding:10px;">İşlem</th>
+            </tr>
+            </thead>
+            <tbody id="usersTableBody"></tbody>
+        </table>
+    </div>
+
+    <div id="tab-cache" style="display:none;">
+        <table id="cacheTable" style="width:100%; border-collapse:collapse; color:#fff;">
+            <thead>
+            <tr style="text-align:left; border-bottom:1px solid #3d3b5a;">
+                <th style="padding:10px;">Sorgu</th>
+                <th style="padding:10px;">Offset</th>
+                <th style="padding:10px;">TTL (kalan)</th>
+            </tr>
+            </thead>
+            <tbody id="cacheTableBody"></tbody>
+        </table>
+    </div>
+
 <!-- 5 İstatistik Grafiği - 2x3 (3 sütun) grid düzeni -->
         <div class="charts-grid">
             <div class="chart-container">
@@ -204,6 +246,10 @@
             </div>
 
         </div>
+
+
+
+
     </div>
 
 <script>
@@ -377,6 +423,61 @@
             showLogin();
         }
     });
+
+    function showTab(name) {
+    document.getElementById('tab-stats').style.display = name === 'stats' ? 'block' : 'none';
+    document.getElementById('tab-users').style.display = name === 'users' ? 'block' : 'none';
+    document.getElementById('tab-cache').style.display = name === 'cache' ? 'block' : 'none';
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    event.target.classList.add('active');
+
+    if (name === 'users') loadUsers();
+    if (name === 'cache') loadCache();
+    }
+
+    function getKey() { return localStorage.getItem(STORAGE_KEY); }
+
+    function loadUsers() {
+        fetch('/api/admin/users', { headers: { 'X-Admin-Key': getKey() } })
+            .then(r => r.json())
+            .then(users => {
+                const tbody = document.getElementById('usersTableBody');
+                tbody.innerHTML = users.map(u => `
+                    <tr style="border-bottom:1px solid #2d2a4a;">
+                        <td style="padding:10px;">${u.username}</td>
+                        <td style="padding:10px;">${u.email}</td>
+                        <td style="padding:10px; color:${u.emailVerified ? '#00e676' : '#ff5252'};">
+                            ${u.emailVerified ? 'Doğrulandı' : 'Doğrulanmadı'}
+                        </td>
+                        <td style="padding:10px;">
+                            ${u.emailVerified ? '-' : `<button onclick="verifyUser(${u.id})" class="tab-btn">Doğrula</button>`}
+                        </td>
+                    </tr>
+                `).join('');
+            });
+    }
+
+    function verifyUser(id) {
+        fetch(`/api/admin/users/${id}/verify`, {
+            method: 'POST',
+            headers: { 'X-Admin-Key': getKey() }
+        }).then(() => loadUsers());
+    }
+
+    function loadCache() {
+        fetch('/api/admin/cache/search-terms', { headers: { 'X-Admin-Key': getKey() } })
+            .then(r => r.json())
+            .then(items => {
+                const tbody = document.getElementById('cacheTableBody');
+                tbody.innerHTML = items.map(i => `
+                    <tr style="border-bottom:1px solid #2d2a4a;">
+                        <td style="padding:10px;">${i.term}</td>
+                        <td style="padding:10px;">${i.offset}</td>
+                        <td style="padding:10px;">${Math.round(i.ttlSeconds / 60)} dk</td>
+                    </tr>
+                `).join('');
+            });
+    }
 </script>
 </body>
 </html>
